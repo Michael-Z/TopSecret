@@ -12,8 +12,8 @@ class Players:
 
 
 class NodeTypes:
-	TERMINAL_FOLD = -2
-	TERMINAL_CALL = -1
+	TERMINAL_FOLD = -3
+	TERMINAL_CALL = -2
 	CHECK = -1
 	CHANCE = 0
 	INNER = 1

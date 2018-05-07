@@ -12,3 +12,5 @@ class Node:
 		# self.board_string = None  todo
 		self.terminal = terminal
 		self.actions = None
+		self.depth = 0
+		self.children = None
