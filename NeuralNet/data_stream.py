@@ -28,15 +28,15 @@ class DataStream:
 
 	def load_train_data(self, name="train"):
 		data = self.load_data(name)
-		self.train_input_data, self.train_target_data, self.train_mask_data = data
+		self.train_input_data, self.train_target_data, self.train_mask_data = data[0], data[1], data[2].repeat(1, 2)
 		self.train_data_count = self.train_input_data.size(0)
-		assert self.train_input_data.size(0) - 1 == self.train_target_data.size(0) == self.train_mask_data.size(0)
+		assert self.train_input_data.size(1) - 1 == self.train_target_data.size(1) == self.train_mask_data.size(1)
 
 	def load_valid_data(self, name="valid"):
 		data = self.load_data(name)
-		self.valid_input_data, self.valid_target_data, self.valid_mask_data = data
+		self.valid_input_data, self.valid_target_data, self.valid_mask_data = data[0], data[1], data[2].repeat(1, 2)
 		self.valid_data_count = self.valid_input_data.size(0)
-		assert self.train_input_data.size(0) - 1 == self.train_target_data.size(0) == self.train_mask_data.size(0)
+		assert self.train_input_data.size(1) - 1 == self.train_target_data.size(1) == self.train_mask_data.size(1)
 
 	def get_train_batch_count(self):
 		return self.train_input_data.size(0) // self.batch_size

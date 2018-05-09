@@ -21,8 +21,8 @@ class Trainer:
 			self.data_stream.start_epoch()
 			loss_sum = 0
 			state = {"learningRate": self.learning_rate}
-			for i in range(self.data_stream.train_batch_count):
-				inputs, targets, mask = self.data_stream.get_batch(i)
+			for i in range(self.data_stream.get_train_batch_count()):
+				inputs, targets, mask = self.data_stream.get_train_batch(i)
 				# todo learning rate
 				_, loss = self.optim_func(lambda x: self.feval(x, inputs, targets, mask), self.params, state)
 				loss_sum += loss

@@ -35,8 +35,8 @@ class MaskedHuberLoss:
 
 		# 3.0 compute mask sum for each batch
 		# self.mask_placeholder.copy_(mask)
-		torch.sum(self.mask_placeholder, dim=1, out=self.mask_sum)
-
+		# torch.sum(self.mask_placeholder, dim=1, out=self.mask_sum)
+		torch.sum(mask, dim=1, out=self.mask_sum)
 		# 3.1 mask multiplier - note that mask is 1 for impossible features
 		# self.mask_multiplier.fill_(feature_size)
 		# self.mask_multiplier.sub_(self.mask_sum.view(-1, 1))
