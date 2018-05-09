@@ -53,7 +53,7 @@ class MaskedHuberLoss:
 
 		return new_loss
 
-	def backward(self, outputs, targets, mask):
+	def backward(self, outputs, targets):
 		dloss_doutput = self.criterion.backward(outputs, targets)
 		dloss_doutput.div_(self.mask_multiplier.expand_as(dloss_doutput))
 		return dloss_doutput
