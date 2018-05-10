@@ -3,12 +3,14 @@ from Settings.arguments import TexasHoldemAgrument
 import torch
 
 
+# compute a huber loss for neural net training and evaluation
+# compute the loss across buckets, only the possible buckets when boards are given
 class MaskedHuberLoss:
 
 	def __init__(self):
 		self.criterion = SmoothL1Criterion()
+		self.mask_placeholder = None  # batch_size * feature_size(bucket number)
 		self.mask_sum = None  # batch_size * 1
-		# self.mask_placeholder = None
 		self.mask_multiplier = None  # batch_size * 1
 
 	# computes the loss over a batch of neural net outputs and targets
@@ -30,25 +32,26 @@ class MaskedHuberLoss:
 
 		# 2.0 if the batch size has changed, create new storage for the sum, otherwise reuse
 		if self.mask_sum is None or self.mask_sum.size(0) != batch_size:
+			self.mask_placeholder = TexasHoldemAgrument.Tensor(mask.size()).fill_(0)
 			self.mask_sum = TexasHoldemAgrument.Tensor(batch_size).fill_(0)
 			self.mask_multiplier = self.mask_sum.clone().fill_(0).view(-1, 1)
 
 		# 3.0 compute mask sum for each batch
-		# self.mask_placeholder.copy_(mask)
-		# torch.sum(self.mask_placeholder, dim=1, out=self.mask_sum)
+		self.mask_placeholder.copy_(mask)
+		torch.sum(self.mask_placeholder, dim=1, out=self.mask_sum)
 		torch.sum(mask, dim=1, out=self.mask_sum)
+
 		# 3.1 mask multiplier - note that mask is 1 for impossible features
-		# self.mask_multiplier.fill_(feature_size)
-		# self.mask_multiplier.sub_(self.mask_sum.view(-1, 1))
-		# self.mask_multiplier.div_(feature_size)
-		self.mask_multiplier.copy_(self.mask_sum.view(-1, 1)).div_(feature_size)
+		self.mask_multiplier.fill_(feature_size)
+		self.mask_multiplier.sub_(self.mask_sum.view(-1, 1))
+		self.mask_multiplier.div_(feature_size)
 
 		# 4.0 multiplier to get a new loss
 		# loss is not really computed batch-wise correctly
 		# but that does not really matter now since gradients are correct
 		total_mask_sum = self.mask_sum.sum()
 		element_number = batch_size * feature_size
-		loss_multiplier = element_number / total_mask_sum
+		loss_multiplier = element_number / (element_number - total_mask_sum)
 		new_loss = loss_multiplier * loss
 
 		return new_loss

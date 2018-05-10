@@ -30,7 +30,17 @@ class Trainer:
 			print(loss_sum)
 			print("epoch %d" % epoch)
 		end_time = time.time()
-		print("time cost", end_time - start_time)
+		print("training time cost", end_time - start_time)
+
+		valid_loss_sum = 0
+		for i in range(self.data_stream.get_valid_batch_count()):
+			inputs, targets, mask = self.data_stream.get_valid_batch(batch_index=i)
+			outputs = self.network.forward(inputs)
+			loss = self.criterion.forward(outputs, targets, mask)
+			valid_loss_sum += loss
+
+		valid_loss = valid_loss_sum / self.data_stream.get_valid_batch_count()
+		print("valid loss:", valid_loss)
 
 	# function pass to optim package
 	# @param params_new the neural network parameters
