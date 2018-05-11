@@ -1,16 +1,18 @@
-
-
+# node_type: inner(include check, chance, player), terminal call/fold
+# cp: current player 0, 1
+# street: 0, 1, 2, 3
+# bets: should be a tensor of size [2]
+# board: should be a tensor of size[board_card_count]
 class Node:
 
-	def __init__(self, street, board, current_player, bets, node_type, terminal=False):
+	def __init__(self, street, board, cp, bets, node_type):
 		self.street = street
-		self.bets = bets.clone()
-		self.pot = bets.min()
-		self.current_player = current_player
-		self.node_type = node_type
 		self.board = board
-		# self.board_string = None  todo
-		self.terminal = terminal
+		self.current_player = cp
+		self.bets = bets
+		self.pot = bets.min()
+		self.node_type = node_type
+
 		self.actions = None
-		self.depth = 0
 		self.children = None
+		self.depth = 0
