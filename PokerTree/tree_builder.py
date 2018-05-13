@@ -82,7 +82,7 @@ class TexasHoldemTreeBuilder:
 			children.append(chance_node)
 		else:				# [4.0] terminal call
 			bets = node.bets.clone().fill_(node.bets.max())
-			terminal_call_node = Node(node.street, node.board, Players.NONE, bets, NodeTypes.TERMINAL_CALL)
+			terminal_call_node = Node(node.street, node.board, op, bets, NodeTypes.TERMINAL_CALL)
 			children.append(terminal_call_node)
 		#  [5.0] raise actions
 		possible_bets = self.bet_sizing.get_possible_bets(node)
