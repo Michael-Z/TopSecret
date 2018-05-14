@@ -2,7 +2,7 @@
 from Settings.arguments import TexasHoldemAgrument
 
 
-class Mask(object):
+class Mask:
 	# [1326 * 1326 mask out conflict hole combinations]
 	hole_mask = None
 
@@ -30,12 +30,16 @@ class Mask(object):
 		return cls.hole_mask
 
 	# return [1326] one dim vector
-	# @param board should be a tensor
+	# @param board should be a list
 	@classmethod
 	def get_board_mask(cls, board):
+		s = None
+		if isinstance(board, (list, )):
+			s = set(board)
+		else:
+			raise Exception
 		hc, cc = TexasHoldemAgrument.hole_count, TexasHoldemAgrument.card_count
-		out = [1 for i in range(hc)]
-		s = set([int(x) for x in board])
+		out = [1] * hc
 		for s_card in range(cc - 1):
 			for b_card in range(s_card + 1, cc):
 				if s_card in s or b_card in s:
