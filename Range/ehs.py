@@ -6,10 +6,9 @@ from HandIsomorphism.hand_isomorphism import Hand_Indexer_S
 
 class ExpectedHandStrength(object):
 
-	def __init__(self, filename):
-		with open(filename, 'rb') as file:
-			four_round_ehs = pickle.load(file)
-			self.preflop_ehs, self.flop_ehs, self.turn_ehs, self.river_ehs = four_round_ehs
+	def __init__(self, file_path):
+		with open(file_path + "four_round_ehs.dat", "rb") as f:
+			self.preflop_ehs, self.flop_ehs, self.turn_ehs, self.river_ehs = pickle.load(f)
 		self.cards_per_round = [[2], [2, 3], [2, 4], [2, 5]]
 		self.indexers = [Hand_Indexer_S(cards) for cards in self.cards_per_round]
 
