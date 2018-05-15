@@ -65,6 +65,10 @@ class DataGenerator:
 			board, ranges, pots = self.generate_random_poker_situation()
 			ranges_tensor = Arguments.Tensor(ranges)
 			pots_tensor = Arguments.Tensor(pots).div_(Arguments.stack)
+			mask = Mask.get_board_mask(board)
+			mask_tensor = Arguments.Tensor(mask)
+			# mask
+			self.mask_ph.copy_(mask_tensor.expand_as(self.mask_ph))
 			# [2.0] solve random poker situations
 			for j in range(self.batch_size):
 				bets = [pots[j]] * 2
@@ -80,10 +84,8 @@ class DataGenerator:
 				# targets
 				self.targets_ph[j, :1326].copy_(cf_values[0])
 				self.targets_ph[j, 1326:].copy_(cf_values[1])
-				# mask
-				mask = Mask.get_board_mask(board)
-				mask_tensor = Arguments.Tensor(mask)
-				self.mask_ph[j, :].copy_(mask_tensor)
+				# mask already handled before loop
+			# end for
 			# save a batch of data
 			self.save_train_data(i)
 
