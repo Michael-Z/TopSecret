@@ -8,7 +8,7 @@ from Settings.constants import NodeTypes
 
 class PublicTreeCFR:
 	def __init__(self, solve_iter=1000, skip_iter=970):
-		self.regret_eplision = 10 ** -9
+		self.regret_epsilon = 10 ** -9
 		self._cached_terminal_equities = {}
 		self.skip_iter = skip_iter
 		self.solve_iter = solve_iter
