@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 import torch
-import numpy as np
 import random
+import numpy as np
 from random import shuffle
+from Equity.mask import Mask
 from Settings.constants import Players
+from Range.ehs import ExpectedHandStrength
 from CFR.public_tree_cfr import PublicTreeCFR
 from Range.range_generator import RangeGenerator
-from PokerTree.tree_builder import TexasHoldemTreeBuilder as TreeBuilder
 from Settings.arguments import TexasHoldemAgrument as Arguments
-from Equity.mask import Mask
+from PokerTree.tree_builder import TexasHoldemTreeBuilder as TreeBuilder
 
 
 class DataGenerator:
@@ -35,13 +36,15 @@ class DataGenerator:
 		self.targets_ph = None		# placeholder of targets
 		self.mask_ph = None			# placeholder of mask
 
+		self.ehs = ExpectedHandStrength(file_path="../Data/EHS/")
+
 	# @param filename
 	# @param rd should be 2, 3, 4
 	def setup(self, rd, solve_iter=1000, skip_iter=970):
 		self.round = rd
 		self.board_count = [0, 3, 4, 5][rd]
 		self.solver = PublicTreeCFR(solve_iter=solve_iter, skip_iter=skip_iter)
-		self.range_generator = RangeGenerator()
+		self.range_generator = RangeGenerator(ehs=self.ehs)
 		self.tree_builder = TreeBuilder(bet_sizing=None, limit_to_street=True)
 		self.deck = list(range(52))
 
