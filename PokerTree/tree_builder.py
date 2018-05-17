@@ -1,9 +1,7 @@
-import torch
 from PokerTree.tree_node import Node
-from Settings.constants import Actions, Players, NodeTypes
 from Tools.card_tools import CardTool
 from PokerTree.bet_sizing import BetSizing
-from Settings.arguments import TexasHoldemAgrument
+from Settings.constants import Actions, Players, NodeTypes
 
 
 class TexasHoldemTreeBuilder:
@@ -12,11 +10,12 @@ class TexasHoldemTreeBuilder:
 		self.limit_to_street = limit_to_street
 		self.bet_sizing = bet_sizing or BetSizing(pot_fractions=[1])
 
+	# @param street the current round
+	# @param initial_bets the list holding both player bets
+	# @param current player the current player (0, 1) at current node
+	# @param board a list of cards (int 0-51)
 	def build_tree(self, street, initial_bets, current_player, board):
-		if isinstance(initial_bets, (list, )):
-			initial_bets = TexasHoldemAgrument.Tensor(initial_bets)
-		if isinstance(board, (list, )):
-			board = TexasHoldemAgrument.Tensor(board)
+		board = board.to_list()
 		root = Node(street, board, current_player, initial_bets, node_type=NodeTypes.INNER)
 		self._build_tree_dfs(root)
 		return root
@@ -36,7 +35,7 @@ class TexasHoldemTreeBuilder:
 			elif i == 1:
 				node.actions[i] = Actions.CCALL
 			else:
-				node.actions[i] = int(children[i].bets.max())
+				node.actions[i] = max(children[i].bets)
 		node.depth += 1
 		return node
 
@@ -79,18 +78,17 @@ class TexasHoldemTreeBuilder:
 			check_node = Node(street, board, op, node.bets, NodeTypes.CHECK)
 			children.append(check_node)
 		elif transition:    # [3.0] transition, cc or *rc
-			bets = TexasHoldemAgrument.Tensor(2).fill_(node.bets.max())
+			bets = [max(node.bets)] * 2
 			chance_node = Node(street, board, Players.CHANCE, bets, NodeTypes.CHANCE)
 			children.append(chance_node)
 		else:				# [4.0] terminal call
-			bets = node.bets.clone().fill_(node.bets.max())
+			bets = [max(node.bets)] * 2
 			terminal_call_node = Node(node.street, node.board, op, bets, NodeTypes.TERMINAL_CALL)
 			children.append(terminal_call_node)
 		#  [5.0] raise actions
 		possible_bets = self.bet_sizing.get_possible_bets(node)
-		for bet in possible_bets:
-			bet_tensor = TexasHoldemAgrument.Tensor(bet)
-			child_node = Node(node.street, node.board, 1 - node.current_player, bet_tensor, NodeTypes.INNER)
+		for bets in possible_bets:
+			child_node = Node(node.street, node.board, op, bets, NodeTypes.INNER)
 			children.append(child_node)
 		return children
 

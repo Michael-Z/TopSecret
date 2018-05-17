@@ -11,7 +11,7 @@ class Node:
 		self.board = board
 		self.current_player = cp
 		self.bets = bets
-		self.pot = bets.min()
+		self.pot = min(bets)
 		self.node_type = node_type
 
 		self.actions = None
