@@ -2,6 +2,7 @@ from PokerTree.tree_node import Node
 from Tools.card_tools import CardTool
 from PokerTree.bet_sizing import BetSizing
 from Settings.constants import Actions, Players, NodeTypes
+from Settings.arguments import TexasHoldemAgrument as Argument
 
 
 class TexasHoldemTreeBuilder:
@@ -15,7 +16,6 @@ class TexasHoldemTreeBuilder:
 	# @param current player the current player (0, 1) at current node
 	# @param board a list of cards (int 0-51)
 	def build_tree(self, street, initial_bets, current_player, board):
-		board = board.to_list()
 		root = Node(street, board, current_player, initial_bets, node_type=NodeTypes.INNER)
 		self._build_tree_dfs(root)
 		return root
@@ -73,7 +73,7 @@ class TexasHoldemTreeBuilder:
 		cc = (node.bets[cp] == node.bets[op] and node.current_player == Players.P1 and node.street == 0) or \
 			(node.bets[cp] == node.bets[op] and node.current_player == Players.P0 and node.street > 0)
 		rc = node.bets[cp] < node.bets[op]
-		transition = 1 <= node.street <= 2 and (cc or rc)
+		transition = (1 <= node.street <= 2) and (cc or rc) and (node.bets[op] < Argument.stack)
 		if check:			# [2.0] check, bets equal, not preflop, cp == P0
 			check_node = Node(street, board, op, node.bets, NodeTypes.CHECK)
 			children.append(check_node)
@@ -101,8 +101,7 @@ class TexasHoldemTreeBuilder:
 		next_street = node.street + 1
 		next_boards = self.get_boards(node.street + 1, node.board)  # get all possible future boards
 		for i, next_board in zip(range(len(next_boards)), next_boards):
-			board_tensor = TexasHoldemAgrument.Tensor(next_board)
-			child_node = Node(next_street, board_tensor, Players.P0, node.bets, NodeTypes.INNER)
+			child_node = Node(next_street, next_board, Players.P0, node.bets, NodeTypes.INNER)
 			children.append(child_node)
 		return children
 
