@@ -13,20 +13,12 @@ class TreeVisualizer:
 	# @return a table containing `name`, `label`, and `shape` fields for graphviz
 	# @local
 	def node_to_graphviz(self, node):
-		out = {'label': '"<f0>' + str(node.current_player)}
+		is_terminal = " | terminal" if node.node_type <= -2 else ""
+		label = '"<f0>cp:%r | spent:%r%s "' % (node.current_player, node.bets, is_terminal)
+		name = '"node%d"' % self.node_to_graphviz_counter
+		shape = '"record"'
 
-		# 1.0 label
-		out['label'] += '| spent: '
-
-		for i in range(2):
-			out['label'] += str(node.bets[i]) + " "
-
-		out['label'] += '"'
-
-		# 2.0 name
-		out['name'] = '"node' + str(self.node_to_graphviz_counter) + '"'
-		# 3.0 shape
-		out['shape'] = '"record"'
+		out = {'label': label, 'name': name, 'shape': shape}
 		self.node_to_graphviz_counter += 1
 
 		return out
@@ -90,7 +82,7 @@ class TreeVisualizer:
 	def graphviz(self, root, filename):
 		filename = filename or 'unnamed.dot'
 
-		out = 'digraph g {  graph [ rankdir = "LR"];node [fontsize = "16" shape = "ellipse"]; edge [];'
+		out = 'digraph g {  splines=false; graph [ rankdir = "LR"];node [fontsize = "16"]; edge [];'
 
 		nodes = []
 		edges = []
