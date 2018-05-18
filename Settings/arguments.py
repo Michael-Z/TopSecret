@@ -1,7 +1,7 @@
 import torch
 
 
-class TexasHoldemAgrument:
+class TexasHoldemArgument:
 
 	stack = 20000
 	SB = 50

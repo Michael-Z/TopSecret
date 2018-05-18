@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 import torch
 import platform
-from ctypes import cdll, c_int
 from Equity.mask import Mask
-from Settings.arguments import TexasHoldemAgrument
+from ctypes import cdll, c_int
+from Settings.arguments import TexasHoldemArgument as Argument
 
 dll = None
 if platform.system() == "Windows":
 	dll = cdll.LoadLibrary("../so/handeval.dll")
 else:
-	dll = cdll.LoadLibrary("./so/handeval.so")
+	dll = cdll.LoadLibrary("../so/handeval.so")
 
 
 class TerminalEquity(object):
 	def __init__(self):
-		self.hole_mask = TexasHoldemAgrument.Tensor(Mask.get_hole_mask())
+		self.hole_mask = Argument.Tensor(Mask.get_hole_mask())
 		self.board_mask = None
 		self.call_matrix = None
 		self.fold_matrix = None
@@ -25,8 +25,7 @@ class TerminalEquity(object):
 		# [1.0] set call matrix (only works for last round)
 		assert board.size(0) == 5
 
-		call_matrix = TexasHoldemAgrument.Tensor(TexasHoldemAgrument.hole_count, TexasHoldemAgrument.hole_count)\
-			.fill_(0)
+		call_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count).fill_(0)
 		# self.board_mask = Mask.get_board_mask(board)
 
 		# hand evaluation, get strength vector
@@ -37,7 +36,7 @@ class TerminalEquity(object):
 		# strength indicates how large the hand is, -1 indicates impossible hand(conflict with board)
 		dll.eval5Board(_board, 5, _strength)
 		strength_list = [x for x in _strength]
-		strength = TexasHoldemAgrument.Tensor(strength_list)
+		strength = Argument.Tensor(strength_list)
 
 		# set board mask according to strength
 		self.board_mask = strength.clone().fill_(1)
@@ -47,8 +46,8 @@ class TerminalEquity(object):
 
 		# construct row view and column view, construct win/lose/tie matrix
 		# Uij(i for row, j for col) = 1 if hand i < hand j; 0 if hand i == hand j; -1 if hand i > hand j
-		strength_view1 = strength.view(TexasHoldemAgrument.hole_count, 1).expand_as(call_matrix)
-		strength_view2 = strength.view(1, TexasHoldemAgrument.hole_count).expand_as(call_matrix)
+		strength_view1 = strength.view(Argument.hole_count, 1).expand_as(call_matrix)
+		strength_view2 = strength.view(1, Argument.hole_count).expand_as(call_matrix)
 
 		call_matrix[torch.lt(strength_view1, strength_view2)] = 1
 		call_matrix[torch.gt(strength_view1, strength_view2)] = -1
@@ -60,7 +59,7 @@ class TerminalEquity(object):
 		call_matrix[strength_view2 == -1] = 0
 
 		# [2.0] set fold matrix
-		fold_matrix = TexasHoldemAgrument.Tensor(TexasHoldemAgrument.hole_count, TexasHoldemAgrument.hole_count)
+		fold_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count)
 		# make sure player hole don't conflict with opponent hole
 		fold_matrix.copy_(self.hole_mask)
 		# make sure hole don't conflict with board
