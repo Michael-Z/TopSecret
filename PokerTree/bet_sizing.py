@@ -22,7 +22,7 @@ class BetSizing(object):
 		min_raise_size = min(max_raise_size, min_raise_size)
 
 		if min_raise_size == 0:
-			return possible_bets
+			pass
 		elif min_raise_size == max_raise_size:
 			bet = [op_bet, op_bet]
 			bet[cp] = op_bet + min_raise_size
@@ -35,9 +35,9 @@ class BetSizing(object):
 					bet = [op_bet, op_bet]
 					bet[cp] = op_bet + raise_size
 					possible_bets.append(bet)
-		# add all-in action
-		all_in_bet = [op_bet, op_bet]
-		all_in_bet[cp] += max_raise_size
-		possible_bets.append(all_in_bet)
+			# add all-in action
+			all_in_bet = [op_bet, op_bet]
+			all_in_bet[cp] += max_raise_size
+			possible_bets.append(all_in_bet)
 
 		return possible_bets
