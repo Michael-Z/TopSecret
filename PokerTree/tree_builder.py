@@ -70,8 +70,8 @@ class TexasHoldemTreeBuilder:
 				1 <= node.street <= 3)
 
 		# transition flag [raise call or call call or check check]->[cc, rc]
-		cc = (node.bets[cp] == node.bets[op] and node.current_player == Players.P1 and node.street == 0) or \
-			(node.bets[cp] == node.bets[op] and node.current_player == Players.P0 and node.street > 0)
+		cc = (node.bets[cp] == node.bets[op] and cp == Players.P1 and node.street == 0) or \
+			(node.bets[cp] == node.bets[op] and cp == Players.P1 and node.street > 0)
 		rc = node.bets[cp] < node.bets[op]
 		transition = (1 <= node.street <= 2) and (cc or rc) and (node.bets[op] < Argument.stack)
 		if check:			# [2.0] check, bets equal, not preflop, cp == P0
