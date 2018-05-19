@@ -3,8 +3,9 @@
 from Equity.mask import Mask
 
 hole_mask = Mask.get_hole_mask()
-row_sum = [sum(hole_mask[i][:]) for i in range(1326)]
-col_sum = [sum(hole_mask[:][i]) for i in range(1326)]
+row_sum = hole_mask.astype("int8").sum(1)
+col_sum = hole_mask.astype("int8").sum(0)
+print(row_sum)
 for s in row_sum:
 	assert s == 1225
 for s in col_sum:

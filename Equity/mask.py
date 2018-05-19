@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
-from Settings.arguments import TexasHoldemAgrument
+import numpy as np
+from Settings.arguments import TexasHoldemArgument as Argument
 
 
 class Mask:
-	# [1326 * 1326 mask out conflict hole combinations]
-	hole_mask = None
+	# ndarray (1326, 1326) mask out conflict hole combinations
+	hole_mask = None  # once computed. never compute again
 
 	# once hole mask is computed, store it, and it won't change anymore
 	# hole mask only handles player holes' conflict
-	# @params return [1326 * 1326] list
+	# @params return [1326 * 1326] numpy ndarray
 	@classmethod
 	def get_hole_mask(cls):
 		if cls.hole_mask is None:
-			hc, cc = TexasHoldemAgrument.hole_count, TexasHoldemAgrument.card_count
-			valid_hole_mask = [[1 for i in range(hc)] for j in range(hc)]
+			hc, cc = Argument.hole_count, Argument.card_count
+			valid_hole_mask = np.ones(shape=(hc, hc), dtype="bool")
 
 			# p1 hole:(s_card, b_card), p2 hole(s, b), p1, p2 doesn't share same card
 			for s_card in range(cc - 1):
@@ -29,17 +30,13 @@ class Mask:
 			cls.hole_mask = valid_hole_mask
 		return cls.hole_mask
 
-	# return [1326] one dim vector
+	# return [1326] one dim ndarray shape is (1326, )
 	# @param board should be a list
 	@classmethod
 	def get_board_mask(cls, board):
-		s = None
-		if isinstance(board, (list, )):
-			s = set(board)
-		else:
-			raise Exception
-		hc, cc = TexasHoldemAgrument.hole_count, TexasHoldemAgrument.card_count
-		out = [1] * hc
+		s = set(board)
+		hc, cc = Argument.hole_count, Argument.card_count
+		out = np.ones(shape=(hc, ), dtype="bool")
 		for s_card in range(cc - 1):
 			for b_card in range(s_card + 1, cc):
 				if s_card in s or b_card in s:
