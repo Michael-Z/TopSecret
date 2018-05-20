@@ -22,53 +22,72 @@ class TerminalEquity(object):
 		self.fold_matrix = None
 
 	def set_board(self, board):
-		if len(board) == 2:
-			raise NotImplementedError
-		if len(board) == 3:
-			self.call_matrix = self.compute_flop_call_matrix(current_board=board)
-			self.fold_matrix = self.compute_fold_matrix(current_board=board)
-		elif len(board) == 4:
-			self.call_matrix = self.compute_turn_call_matrix(current_board=board)
-			self.fold_matrix = self.compute_fold_matrix(current_board=board)
-		elif len(board) == 5:
-			view1, view2 = self.construct_strength_view(current_board=board)
-			self.call_matrix = self.compute_river_call_matrix(current_board=board, view1=view1, view2=view2)
-			self.fold_matrix = self.compute_fold_matrix(current_board=board)
-		else:
-			raise Exception
+		call_matrix = self.compute_call_matrix(board=board)
+		fold_matrix = self.compute_fold_matrix(board=board)
+		self.call_matrix = call_matrix
+		self.fold_matrix = fold_matrix
+
 		return
 
-	def compute_flop_call_matrix(self, current_board):
-		turn_boards = CardTool.get_possible_future_boards(current_board)
+	def compute_call_matrix(self, board):
+		board_count = len(board)
+		if board_count == 0:
+			raise NotImplementedError
+		elif board_count == 3:
+			call_matrix = self.compute_flop_call_matrix(board=board)
+		elif board_count == 4:
+			call_matrix = self.compute_turn_call_matrix(board=board)
+		elif board_count == 5:
+			call_matrix = self.compute_river_call_matrix(board=board)
+		else:
+			raise Exception
+
+		return call_matrix
+
+	# directly construct fold matrix
+	def compute_fold_matrix(self, board):
+		fold_matrix = np.ones(shape=(self.hc, self.hc), dtype="bool")
+		fold_matrix = self.hole_mask.copy()  # make sure player hole don't conflict with opponent hole
+		board_mask = Mask.get_board_mask(board)  # make sure hole don't conflict with board
+		fold_matrix[board_mask == False] = 0
+
+		return fold_matrix
+
+	def compute_flop_call_matrix(self, board):
+		turn_boards = CardTool.get_possible_future_boards(board)
 		turn_count = len(turn_boards)
 		call_matrixs = np.ndarray(shape=(turn_count, self.hc, self.hc), dtype=float)
 
 		for i, turn_board in zip(range(turn_count), turn_boards):
-			call_matrixs[i] = self.compute_turn_call_matrix(current_board=turn_board)
+			call_matrixs[i] = self.compute_turn_call_matrix(board=turn_board)
 		call_matrix = call_matrixs.sum(axis=0, dtype="int32")
 		call_matrix = call_matrix.astype(float) / turn_count
 
 		return call_matrix
 
-	def compute_turn_call_matrix(self, current_board):
-		river_boards = CardTool.get_possible_future_boards(boards=current_board)
+	def compute_turn_call_matrix(self, board):
+		river_boards = CardTool.get_possible_future_boards(boards=board)
 		river_count = len(river_boards)
 		call_matrixs = np.ndarray(shape=(river_count, self.hc, self.hc), dtype=float)
 
-		for i, future_board in zip(range(river_count), river_boards):
-			view1, view2 = self.construct_strength_view(current_board=future_board)
-			call_matrixs[i] = self.compute_river_call_matrix(current_board=future_board, view1=view1, view2=view2)
+		for i, river_board in zip(range(river_count), river_boards):
+			call_matrixs[i] = self.compute_river_call_matrix(board=river_board)
 		call_matrix = call_matrixs.sum(axis=0, dtype="int16")
 		call_matrix = call_matrix.astype(float) / river_count
 
 		return call_matrix
 
+	def compute_river_call_matrix(self, board):
+		view1, view2 = self.construct_strength_view(board=board)
+		call_matrix = self.compute_final_call_matrix(board=board, view1=view1, view2=view2)
+		return call_matrix
+
 	# only river board has strength view, since there are no more future board cards
-	def construct_strength_view(self, current_board):
-		assert len(current_board) == 5
+	def construct_strength_view(self, board):
+		assert len(board) == 5
 		# [1.0] compute strength for each hands, -1 indicates impossible hand(conflict with board)
 		_strength = (c_int * 1326)()  # param 1
-		_board = (c_int * 5)(*current_board)  # param3
+		_board = (c_int * 5)(*board)  # param3
 		dll.eval5Board(_board, 5, _strength)
 		strength = np.array(_strength)  # strength shape is (1326, )
 
@@ -85,7 +104,7 @@ class TerminalEquity(object):
 		return strength_view1, strength_view2
 
 	# directly construct call matrix with strength view [row view, col view]
-	def compute_river_call_matrix(self, current_board, view1, view2):
+	def compute_final_call_matrix(self, board, view1, view2):
 		call_matrix = np.zeros(shape=(self.hc, self.hc), dtype="bool")
 
 		call_matrix[view1 < view2] = 1  # row < col
@@ -98,17 +117,14 @@ class TerminalEquity(object):
 
 		return call_matrix
 
-	# directly construct fold matrix
-	def compute_fold_matrix(self, current_board):
-		fold_matrix = np.ones(shape=(self.hc, self.hc), dtype="bool")
-		fold_matrix = self.hole_mask.copy()  # make sure player hole don't conflict with opponent hole
-		board_mask = Mask.get_board_mask(current_board)  # make sure hole don't conflict with board
-		fold_matrix[board_mask == False] = 0
-
-		return fold_matrix
-
 	def get_call_matrix(self):
 		return self.call_matrix
 
 	def get_fold_matrix(self):
 		return self.fold_matrix
+
+	def compute_call_value(self, ranges):
+		pass  # todo
+
+	def compute_fold_value(self, fold_player):
+		pass  # todo
