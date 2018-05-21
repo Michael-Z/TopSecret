@@ -5,6 +5,10 @@ from HandIsomorphism.hand_isomorphism_encapsulation import HandIsomorphismEncaps
 def test_hand_isomorphism():
 	hi = HandIsomorphism()
 	hi.setup(rounds=1, cards_per_round=[2])
+	size = hi.get_size()
+	print(size)
+
+	assert size == 169
 
 	for i in range(169):
 		cards = hi.hand_unindex(index=i)

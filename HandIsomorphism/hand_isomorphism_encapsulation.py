@@ -12,16 +12,21 @@ class HandIsomorphismEncapsulation:
 		self.card_count = None
 		self.index_function = self.dll.hand_index_last_
 		self.unindex_function = self.dll.hand_unindex_
+		self.size_function = self.dll.get_size
 
 		self.index_function.argtypes = [c_uint32, c_uint8 * 8, c_uint8 * 7]
 		self.index_function.restype = c_uint64
 		self.unindex_function.argtypes = [c_uint32, c_uint8 * 8, c_uint64, c_uint8 * 7]
 		self.unindex_function.restype = c_bool
+		self.size_function.argtypes = [c_uint32, c_uint8 * 8]
+		self.size_function.restype = c_uint64
 
 	def setup(self, rounds, cards_per_round):
 		self.rounds = rounds
 		self.card_count = sum(cards_per_round)
 		self.cards_per_round = (c_uint8 * 8)(*cards_per_round)
+
+		return
 
 	def index_hand(self, cards):
 		cards_ = (c_uint8 * 7)(*cards)
@@ -36,4 +41,6 @@ class HandIsomorphismEncapsulation:
 
 		return cards
 
-
+	def get_size(self):
+		size = self.size_function(self.rounds, self.cards_per_round)
+		return size
