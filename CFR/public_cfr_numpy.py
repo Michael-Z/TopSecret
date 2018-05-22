@@ -19,7 +19,6 @@ class PublicTreeCFR:
 		root.ranges_absolute = start_range
 		for it in range(self.solve_iter):
 			self.cfr_iter_dfs(root, it)
-			print(it)
 
 	# run cfr depth first search
 	def cfr_iter_dfs(self, node, it):
