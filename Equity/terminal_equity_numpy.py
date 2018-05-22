@@ -42,7 +42,7 @@ class TerminalEquity(object):
 
 	# directly construct fold matrix
 	def compute_fold_matrix(self, board):
-		fold_matrix = np.ones(shape=(self.hc, self.hc), dtype="bool")
+		fold_matrix = np.ones(shape=(self.hc, self.hc), dtype=float)
 		fold_matrix = self.hole_mask.copy()  # make sure player hole don't conflict with opponent hole
 		board_mask = Mask.get_board_mask(board)  # make sure hole don't conflict with board
 		fold_matrix[board_mask == False] = 0
@@ -56,7 +56,7 @@ class TerminalEquity(object):
 
 		for i, turn_board in zip(range(turn_count), turn_boards):
 			call_matrixs[i] = self.compute_turn_call_matrix(board=turn_board)
-		call_matrix = call_matrixs.sum(axis=0, dtype="int32")
+		call_matrix = call_matrixs.sum(axis=0, dtype=int32)
 		call_matrix = call_matrix.astype(float) / turn_count
 
 		return call_matrix
@@ -68,7 +68,7 @@ class TerminalEquity(object):
 
 		for i, river_board in zip(range(river_count), river_boards):
 			call_matrixs[i] = self.compute_river_call_matrix(board=river_board)
-		call_matrix = call_matrixs.sum(axis=0, dtype="int16")
+		call_matrix = call_matrixs.sum(axis=0, dtype=float)
 		call_matrix = call_matrix.astype(float) / river_count
 
 		return call_matrix
@@ -76,6 +76,7 @@ class TerminalEquity(object):
 	def compute_river_call_matrix(self, board):
 		view1, view2 = self.construct_strength_view(board=board)
 		call_matrix = self.compute_final_call_matrix(board=board, view1=view1, view2=view2)
+
 		return call_matrix
 
 	# only river board has strength view, since there are no more future board cards
@@ -88,9 +89,9 @@ class TerminalEquity(object):
 		strength = np.array(_strength)  # strength shape is (1326, )
 
 		# set board mask according to strength, shape (1326, )
-		board_mask = np.ones(shape=(self.hc, ), dtype="bool")
-		board_mask[strength < 0] = False
-		assert board_mask.sum() == 1081
+		# board_mask = np.ones(shape=(self.hc, ), dtype="bool")
+		# board_mask[strength < 0] = False
+		# assert board_mask.sum() == 1081
 
 		# construct row view and column view, construct win/lose/tie matrix
 		# Uij(i for row, j for col) = 1 if hand i < hand j; 0 if hand i == hand j; -1 if hand i > hand j
@@ -101,7 +102,7 @@ class TerminalEquity(object):
 
 	# directly construct call matrix with strength view [row view, col view]
 	def compute_final_call_matrix(self, board, view1, view2):
-		call_matrix = np.zeros(shape=(self.hc, self.hc), dtype="bool")
+		call_matrix = np.zeros(shape=(self.hc, self.hc), dtype=float)
 
 		call_matrix[view1 < view2] = 1  # row < col
 		call_matrix[view1 > view2] = -1  # row > col
