@@ -75,7 +75,7 @@ class PublicTreeCFR:
 
 				# compute positive regrets, use positive regrets to compute current strategy
 				node.positive_regrets = node.regrets.copy()
-				node.positive_regrets[node.positive_regrets < 0] = self.regret_epsilon
+				node.positive_regrets[node.positive_regrets <= 0] = self.regret_epsilon
 
 				# compute current strategy
 				regret_sum = node.positive_regrets.sum(axis=action_dim).\
@@ -131,7 +131,6 @@ class PublicTreeCFR:
 
 	def update_average_strategy(self, node, current_strategy, it):
 		if it > self.skip_iter:
-
 			action_count, action_dim = len(node.children), 0
 			if node.strategy is None:
 				node.strategy = np.zeros(shape=(action_count, Argument.hole_count), dtype=float)
@@ -140,8 +139,9 @@ class PublicTreeCFR:
 
 			iter_weight_contribution = node.ranges_absolute[node.current_player]\
 				.copy().reshape((1, Argument.hole_count))
-			iter_weight_contribution[iter_weight_contribution < 0] = self.regret_epsilon
+			iter_weight_contribution[iter_weight_contribution <= 0] = self.regret_epsilon
 			node.iter_weight_sum += iter_weight_contribution
+
 			iter_weight = iter_weight_contribution / node.iter_weight_sum
 
 			expanded_weight = iter_weight.repeat(repeats=action_count, axis=action_dim)
