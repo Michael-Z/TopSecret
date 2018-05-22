@@ -28,6 +28,23 @@ class HandIsomorphismEncapsulation:
 
 		return
 
+	def setup_by_round(self, rounds, mode):
+		if mode == "board":
+			if rounds == 1:
+				raise Exception
+			if rounds == 2:
+				self.setup(rounds=rounds, cards_per_round=[3])
+			elif rounds == 3:
+				self.setup(rounds=rounds, cards_per_round=[4])
+			elif rounds == 4:
+				self.setup(rounds=rounds, cards_per_round=[5])
+			else:
+				raise Exception
+		elif mode == "hole":
+			raise NotImplementedError
+
+		return
+
 	def index_hand(self, cards):
 		cards_ = (c_uint8 * 7)(*cards)
 		index = self.index_function(self.rounds, self.cards_per_round, cards_)
