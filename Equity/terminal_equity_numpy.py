@@ -120,8 +120,21 @@ class TerminalEquity(object):
 	def get_fold_matrix(self):
 		return self.fold_matrix
 
+	# set board must be called first
+	# use self.call_matrix and ranges to compute Terminal Call Value
 	def compute_call_value(self, ranges):
-		pass  # todo
+		values = np.ndarray(shape=(2, Argument.hole_count), dtype=float)
+		values[0] = np.matmul(ranges[1], self.call_matrix)
+		values[1] = np.matmul(ranges[0], self.call_matrix)
 
-	def compute_fold_value(self, fold_player):
-		pass  # todo
+		return values
+
+	# set_board must be called first
+	# use self.fold_matrix, ranges and fold_player to compute Terminal Fold Value
+	def compute_fold_value(self, ranges, fold_player):
+		wp, lp = 1 - fold_player, fold_player  # winer and loser
+		values = np.ndarray(shape=(2, Argument.hole_count), dtype=float)
+		values[wp] = np.matmul(ranges[lp], self.fold_matrix)
+		values[lp] = np.matmul(ranges[wp], -self.fold_matrix)
+
+		return values
