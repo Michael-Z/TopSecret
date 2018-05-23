@@ -29,14 +29,14 @@ class TexasHoldemTreeBuilder:
 		for i in range(child_count):
 			children[i].parent = node
 			self._build_tree_dfs(children[i])
-			node.depth = max(depth, children[i].depth)
+			depth = max(depth, children[i].depth)
 			if i == 0:
 				node.actions[i] = Actions.FOLD
 			elif i == 1:
 				node.actions[i] = Actions.CCALL
 			else:
 				node.actions[i] = max(children[i].bets)
-		node.depth += 1
+		node.depth = depth + 1
 		return node
 
 	# create children nodes after parent node
