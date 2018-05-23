@@ -7,10 +7,12 @@ from Tools.card_tools import CardTool
 from Settings.arguments import TexasHoldemArgument as Argument
 
 
+dll = cdll.LoadLibrary("../so/hand_eval.dll") if platform.system() == "Windows" \
+	else cdll.LoadLibrary("../so/hand_eval.so")
+
+
 class TerminalEquity(object):
 	def __init__(self):
-		self.dll = cdll.LoadLibrary("../so/hand_eval.dll") if platform.system() == "Windows" else \
-					cdll.LoadLibrary("../so/hand_eval.so")
 		self.hc, self.cc = Argument.hole_count, Argument.card_count
 		self.hole_mask = Mask.get_hole_mask()
 		self.board_mask = None
@@ -85,7 +87,7 @@ class TerminalEquity(object):
 		# [1.0] compute strength for each hands, -1 indicates impossible hand(conflict with board)
 		_strength = (c_int * 1326)()  # param 1
 		_board = (c_int * 5)(*board)  # param3
-		self.dll.eval5Board(_board, 5, _strength)
+		dll.eval5Board(_board, 5, _strength)
 		strength = np.array(_strength)  # strength shape is (1326, )
 
 		# set board mask according to strength, shape (1326, )
