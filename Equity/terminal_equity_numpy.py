@@ -132,8 +132,8 @@ class TerminalEquity(object):
 
 	# set_board must be called first
 	# use self.fold_matrix, ranges and fold_player to compute Terminal Fold Value
-	def compute_fold_value(self, ranges, fold_player):
-		wp, lp = 1 - fold_player, fold_player  # winer and loser
+	def compute_fold_value(self, ranges, win_player):
+		wp, lp = win_player, 1 - win_player  # winer and loser
 		values = np.ndarray(shape=(2, Argument.hole_count), dtype=float)
 		values[wp] = np.matmul(ranges[lp], self.fold_matrix)
 		values[lp] = np.matmul(ranges[wp], -self.fold_matrix)
