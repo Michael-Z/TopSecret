@@ -60,8 +60,16 @@ class PublicTreeCFR:
 			current_strategy = None
 
 			if node.current_player == Players.CHANCE:
-				print("to do! not implemented yet!")
-				raise Exception
+				if node.strategy is not None:
+					current_strategy = node.strategy
+				else:
+					current_strategy = np.ones(shape=(action_count, Argument.hole_count), dtype=float)
+					if node.street == 0:
+						current_strategy /=  (Argument.card_count - 4)
+					elif node.street == 1:
+						current_strategy /= (Argument.card_count - 7)
+					elif node.street == 2:
+						current_strategy /= (Argument.card_count - 8)
 			else:
 				# compute current strategy for this node
 
@@ -87,8 +95,12 @@ class PublicTreeCFR:
 			children_ranges_absolute = {}
 
 			if node.current_player == Players.CHANCE:
-				print("todo!")
-				raise Exception
+				ranges_mul_matrix = node.ranges_absolute[0]\
+					.reshape((1, Argument.hole_count)).repeat(repeats=action_count, axis=action_dim)
+				children_ranges_absolute[0] = current_strategy * ranges_mul_matrix
+				ranges_mul_matrix = node.ranges_absolute[1] \
+					.reshape((1, Argument.hole_count)).repeat(repeats=action_count, axis=action_dim)
+				children_ranges_absolute[1] = current_strategy * ranges_mul_matrix
 			else:
 				ranges_mul_matrix = node.ranges_absolute[cp]\
 					.reshape((1, Argument.hole_count)).repeat(action_count, axis=action_dim)
