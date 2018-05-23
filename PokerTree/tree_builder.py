@@ -2,7 +2,7 @@ from PokerTree.tree_node import Node
 from Tools.card_tools import CardTool
 from PokerTree.bet_sizing import BetSizing
 from Settings.constants import Actions, Players, NodeTypes
-from Settings.arguments import TexasHoldemAgrument as Argument
+from Settings.arguments import TexasHoldemArgument as Argument
 
 
 class TexasHoldemTreeBuilder:

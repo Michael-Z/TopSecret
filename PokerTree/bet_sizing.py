@@ -1,4 +1,4 @@
-from Settings.arguments import TexasHoldemAgrument as Argument
+from Settings.arguments import TexasHoldemArgument as Argument
 
 
 class BetSizing(object):
