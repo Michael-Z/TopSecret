@@ -44,7 +44,7 @@ class StrategyCheck:
 		assert (node.ranges_absolute[node.ranges_absolute > 1]).sum() == 0
 
 		# check if range consist only of cards that don't overlap with the board
-		board_mask_inverse = Mask.get_board_mask_inverse(board=node.board).reshape((1, 1326))
+		board_mask_inverse = Mask.get_board_mask_inverse(board=node.board).reshape((1, Argument.hole_count))
 		impossible_range_sum = node.ranges_absolute * board_mask_inverse.repeat(repeats=2, axis=0).astype(dtype=float)
 		assert impossible_range_sum.sum() == 0
 
