@@ -5,11 +5,8 @@ from Equity.mask import Mask
 from ctypes import cdll, c_int
 from Settings.arguments import TexasHoldemArgument as Argument
 
-dll = None
-if platform.system() == "Windows":
-	dll = cdll.LoadLibrary("../so/handeval.dll")
-else:
-	dll = cdll.LoadLibrary("../so/handeval.so")
+dll = cdll.LoadLibrary("../so/hand_eval.dll") if platform.system() == "Windows" \
+	else cdll.LoadLibrary("../so/hand_eval.so")
 
 
 class TerminalEquity(object):

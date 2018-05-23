@@ -6,7 +6,6 @@ from ctypes import cdll, c_int
 from Tools.card_tools import CardTool
 from Settings.arguments import TexasHoldemArgument as Argument
 
-
 dll = cdll.LoadLibrary("../so/hand_eval.dll") if platform.system() == "Windows" \
 	else cdll.LoadLibrary("../so/hand_eval.so")
 
