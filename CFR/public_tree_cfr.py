@@ -2,7 +2,7 @@
 import torch
 from Settings.constants import Players, NodeTypes
 from Equity.terminal_equity import TerminalEquity
-from Settings.arguments import TexasHoldemAgrument
+from Settings.arguments import TexasHoldemArgument
 from Settings.constants import NodeTypes
 
 
@@ -20,6 +20,7 @@ class PublicTreeCFR:
 		root.ranges_absolute = start_range
 		for it in range(self.solve_iter):
 			self.cfr_iter_dfs(root, it)
+			print(it)
 
 	# run cfr depth first search
 	def cfr_iter_dfs(self, node, it):
@@ -72,10 +73,10 @@ class PublicTreeCFR:
 
 				# init regret and positive regret in first iteration
 				if node.regrets is None:
-					node.regrets = TexasHoldemAgrument.Tensor(action_count, TexasHoldemAgrument.hole_count)\
+					node.regrets = TexasHoldemArgument.Tensor(action_count, TexasHoldemArgument.hole_count)\
 						.fill_(self.regret_epsilon)
 				if node.positive_regrets is None:
-					node.positive_regrets = TexasHoldemAgrument.Tensor(action_count, TexasHoldemAgrument.hole_count)\
+					node.positive_regrets = TexasHoldemArgument.Tensor(action_count, TexasHoldemArgument.hole_count)\
 						.fill_(self.regret_epsilon)
 
 				# compute positive regrets, use positive regrets to compute current strategy
@@ -90,7 +91,7 @@ class PublicTreeCFR:
 			# end of computing current strategy
 
 			# compute current cfvs [action, players, ranges]
-			cf_values_allactions = TexasHoldemAgrument.Tensor(action_count, 2, TexasHoldemAgrument.hole_count)
+			cf_values_allactions = TexasHoldemArgument.Tensor(action_count, 2, TexasHoldemArgument.hole_count)
 
 			children_ranges_absolute = {}
 
@@ -115,10 +116,10 @@ class PublicTreeCFR:
 				cf_values_allactions[i] = child_node.cf_values
 
 			# use cfvs from actions(children) to compute cfvs for this node
-			node.cf_values = TexasHoldemAgrument.Tensor(2, TexasHoldemAgrument.hole_count).fill_(0)
+			node.cf_values = TexasHoldemArgument.Tensor(2, TexasHoldemArgument.hole_count).fill_(0)
 
 			if cp != Players.CHANCE:
-				strategy_mul_matrix = current_strategy.view(action_count, TexasHoldemAgrument.hole_count)
+				strategy_mul_matrix = current_strategy.view(action_count, TexasHoldemArgument.hole_count)
 				node.cf_values[cp] = (strategy_mul_matrix * cf_values_allactions[:, cp, :]).sum(0)
 				node.cf_values[op] = (cf_values_allactions[:, op, :]).sum(0)
 			else:
@@ -127,8 +128,8 @@ class PublicTreeCFR:
 			if cp != Players.CHANCE:
 				# compute regrets
 				current_regrets = \
-					cf_values_allactions[:, cp, :].resize_(action_count, TexasHoldemAgrument.hole_count).clone()
-				current_regrets.sub_(node.cf_values[cp].view(1, TexasHoldemAgrument.hole_count)
+					cf_values_allactions[:, cp, :].resize_(action_count, TexasHoldemArgument.hole_count).clone()
+				current_regrets.sub_(node.cf_values[cp].view(1, TexasHoldemArgument.hole_count)
 										.expand_as(current_regrets))
 
 				self.update_regrets(node, current_regrets)
@@ -145,15 +146,15 @@ class PublicTreeCFR:
 
 			actions_count = len(node.children)
 			if node.strategy is None:
-				node.strategy = TexasHoldemAgrument.Tensor(actions_count, TexasHoldemAgrument.hole_count).fill_(0)
+				node.strategy = TexasHoldemArgument.Tensor(actions_count, TexasHoldemArgument.hole_count).fill_(0)
 			if node.iter_weight_sum is None:
-				node.iter_weight_sum = TexasHoldemAgrument.Tensor(TexasHoldemAgrument.hole_count).fill_(0)
+				node.iter_weight_sum = TexasHoldemArgument.Tensor(TexasHoldemArgument.hole_count).fill_(0)
 			iter_weight_contribution = node.ranges_absolute[node.current_player].clone()
 			iter_weight_contribution[torch.le(iter_weight_contribution, 0)] = self.regret_epsilon
 			node.iter_weight_sum.add_(iter_weight_contribution)
 			iter_weight = iter_weight_contribution / node.iter_weight_sum
 
-			expanded_weight = iter_weight.view(1, TexasHoldemAgrument.hole_count).expand_as(node.strategy)
+			expanded_weight = iter_weight.view(1, TexasHoldemArgument.hole_count).expand_as(node.strategy)
 			old_strategy_scale = 1 - expanded_weight
 			node.strategy.mul_(old_strategy_scale)
 			node.strategy.add_(current_strategy * expanded_weight)

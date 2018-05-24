@@ -26,7 +26,7 @@ class PublicTreeCFR:
 		cp, op = node.current_player, 1 - node.current_player
 		assert (cp == Players.P0 or cp == Players.P1 or cp == Players.CHANCE)
 
-		values = np.zeros(shape=node.ranges_absolute.shape, dtype="float")  # store cf values for this node
+		values = None
 
 		# [1.0] terminal node, compute v1, v2 = r2U, r1U
 		if node.node_type == NodeTypes.TERMINAL_CALL or node.node_type == NodeTypes.TERMINAL_FOLD:
@@ -40,18 +40,15 @@ class PublicTreeCFR:
 
 			# use terminal equity to compute values
 			if node.node_type == NodeTypes.TERMINAL_CALL:
-				values[0] = np.matmul(node.ranges_absolute[1], terminal_equity.call_matrix)
-				values[1] = np.matmul(node.ranges_absolute[0], terminal_equity.call_matrix)
+				values = terminal_equity.compute_call_value(ranges=node.ranges_absolute)
 
 			elif node.node_type == NodeTypes.TERMINAL_FOLD:
-				values[0] = np.matmul(node.ranges_absolute[1], terminal_equity.fold_matrix)
-				values[1] = np.matmul(node.ranges_absolute[0], terminal_equity.fold_matrix)
-				values[op, :] *= -1
+				values = terminal_equity.compute_fold_value(ranges=node.ranges_absolute, win_player=cp)
 			else:
 				raise Exception
 
-			values = values * node.pot
-			node.cf_values = values.reshape(node.ranges_absolute.shape)
+			node.cf_values = values * node.pot
+			assert node.cf_values.shape == (2, 1326)
 
 		# not terminal node
 		else:
@@ -65,7 +62,7 @@ class PublicTreeCFR:
 				else:
 					current_strategy = np.ones(shape=(action_count, Argument.hole_count), dtype=float)
 					if node.street == 0:
-						current_strategy /=  (Argument.card_count - 4)
+						current_strategy /= (Argument.card_count - 4)
 					elif node.street == 1:
 						current_strategy /= (Argument.card_count - 7)
 					elif node.street == 2:
@@ -75,18 +72,18 @@ class PublicTreeCFR:
 
 				# init regret and positive regret in first iteration
 				if node.regrets is None:
-					node.regrets = np.ones(shape=(action_count, Argument.hole_count), dtype=float) * self.regret_epsilon
+					node.regrets = np.ones(shape=(action_count, Argument.hole_count), dtype=float)
+					node.regrets[:, :] = self.regret_epsilon
 				if node.positive_regrets is None:
-					node.positive_regrets = \
-						np.ones(shape=(action_count, Argument.hole_count), dtype=float) * self.regret_epsilon
+					node.positive_regrets = np.ones(shape=(action_count, Argument.hole_count), dtype=float)
+					node.positive_regrets[:, :] = self.regret_epsilon
 
 				# compute positive regrets, use positive regrets to compute current strategy
 				node.positive_regrets = node.regrets.copy()
 				node.positive_regrets[node.positive_regrets <= 0] = self.regret_epsilon
 
 				# compute current strategy
-				regret_sum = node.positive_regrets.sum(axis=action_dim).\
-					reshape((1, Argument.hole_count)).repeat(action_count, axis=action_dim)
+				regret_sum = node.positive_regrets.sum(axis=action_dim)
 				current_strategy = node.positive_regrets / regret_sum
 			# end of computing current strategy
 
@@ -95,15 +92,12 @@ class PublicTreeCFR:
 			children_ranges_absolute = {}
 
 			if node.current_player == Players.CHANCE:
-				ranges_mul_matrix = node.ranges_absolute[0]\
-					.reshape((1, Argument.hole_count)).repeat(repeats=action_count, axis=action_dim)
+				ranges_mul_matrix = node.ranges_absolute[0]
 				children_ranges_absolute[0] = current_strategy * ranges_mul_matrix
-				ranges_mul_matrix = node.ranges_absolute[1] \
-					.reshape((1, Argument.hole_count)).repeat(repeats=action_count, axis=action_dim)
+				ranges_mul_matrix = node.ranges_absolute[1]
 				children_ranges_absolute[1] = current_strategy * ranges_mul_matrix
 			else:
-				ranges_mul_matrix = node.ranges_absolute[cp]\
-					.reshape((1, Argument.hole_count)).repeat(action_count, axis=action_dim)
+				ranges_mul_matrix = node.ranges_absolute[cp]
 				children_ranges_absolute[cp] = current_strategy * ranges_mul_matrix
 				children_ranges_absolute[op] = node.ranges_absolute[op].repeat(action_count, axis=action_dim)
 
@@ -120,17 +114,16 @@ class PublicTreeCFR:
 			node.cf_values = np.zeros(shape=(2, Argument.hole_count), dtype=float)
 
 			if cp != Players.CHANCE:
-				strategy_mul_matrix = current_strategy.reshape((action_count, Argument.hole_count))
+				strategy_mul_matrix = current_strategy
 				node.cf_values[cp] = (strategy_mul_matrix * cf_values_allactions[:, cp, :]).sum(axis=action_dim)
 				node.cf_values[op] = (cf_values_allactions[:, op, :]).sum(axis=action_dim)
 			else:
-				raise Exception
+				node.cf_values = cf_values_allactions.sum(axis=action_dim)
 
 			if cp != Players.CHANCE:
 				# compute regrets
-				current_regrets = cf_values_allactions[:, cp, :].reshape((action_count, Argument.hole_count))
-				current_regrets -= node.cf_values[cp]\
-					.reshape(1, Argument.hole_count).repeat(action_count, axis=action_dim)
+				current_regrets = cf_values_allactions[:, cp, :]
+				current_regrets -= node.cf_values[cp]
 
 				self.update_regrets(node, current_regrets)
 				self.update_average_strategy(node, current_strategy, it)
@@ -138,7 +131,7 @@ class PublicTreeCFR:
 	def update_regrets(self, node, current_regrets):
 		# print(current_regrets)
 		node.regrets += current_regrets
-		node.regrets[node.regrets < self.regret_epsilon] = self.regret_epsilon
+		node.regrets[node.regrets <= self.regret_epsilon] = self.regret_epsilon
 
 	def update_average_strategy(self, node, current_strategy, it):
 		if it > self.skip_iter:

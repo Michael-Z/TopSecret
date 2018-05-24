@@ -58,7 +58,7 @@ class TerminalEquity(object):
 
 		for i, turn_board in zip(range(turn_count), turn_boards):
 			call_matrixs[i] = self.compute_turn_call_matrix(board=turn_board)
-		call_matrix = call_matrixs.sum(axis=0, dtype=int32)
+		call_matrix = call_matrixs.sum(axis=0, dtype=int)
 		call_matrix = call_matrix.astype(float) / turn_count
 
 		return call_matrix
