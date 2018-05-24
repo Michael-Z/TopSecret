@@ -46,7 +46,8 @@ class TerminalEquity(object):
 		fold_matrix = np.ones(shape=(self.hc, self.hc), dtype=float)
 		fold_matrix = self.hole_mask.copy()  # make sure player hole don't conflict with opponent hole
 		board_mask = Mask.get_board_mask(board)  # make sure hole don't conflict with board
-		fold_matrix[board_mask == False] = 0
+		fold_matrix[board_mask == False, :] = 0
+		fold_matrix[:, board_mask == False] = 0
 
 		return fold_matrix
 
@@ -103,7 +104,7 @@ class TerminalEquity(object):
 
 	# directly construct call matrix with strength view [row view, col view]
 	def compute_final_call_matrix(self, board, view1, view2):
-		call_matrix = np.zeros(shape=(self.hc, self.hc), dtype=float)
+		call_matrix = np.zeros(shape=(self.hc, self.hc), dtype=int)
 
 		call_matrix[view1 < view2] = 1  # row < col
 		call_matrix[view1 > view2] = -1  # row > col
@@ -136,6 +137,6 @@ class TerminalEquity(object):
 		wp, lp = win_player, 1 - win_player  # winer and loser
 		values = np.ndarray(shape=(2, Argument.hole_count), dtype=float)
 		values[wp] = np.matmul(ranges[lp], self.fold_matrix)
-		values[lp] = np.matmul(ranges[wp], -self.fold_matrix)
+		values[lp] = -np.matmul(ranges[wp], self.fold_matrix)
 
 		return values
