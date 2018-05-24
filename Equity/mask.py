@@ -3,6 +3,7 @@ import numpy as np
 from Settings.arguments import TexasHoldemArgument as Argument
 
 
+# all return value are bool ndarray
 class Mask:
 	# ndarray (1326, 1326) mask out conflict hole combinations
 	hole_mask = None  # once computed. never compute again
@@ -10,7 +11,7 @@ class Mask:
 
 	# once hole mask is computed, store it, and it won't change anymore
 	# hole mask only handles player holes' conflict
-	# @params return [1326 * 1326] numpy ndarray
+	# @return [1326 * 1326] bool numpy ndarray
 	@classmethod
 	def get_hole_mask(cls):
 		if cls.hole_mask is None:
@@ -31,6 +32,8 @@ class Mask:
 			cls.hole_mask = valid_hole_mask
 		return cls.hole_mask
 
+	# 1 for conflict
+	# @return [1326 * 1326] bool numpy ndarray
 	@classmethod
 	def get_hole_mask_inverse(cls):
 		if cls.hole_mask_inverse is None:
@@ -51,8 +54,8 @@ class Mask:
 			cls.hole_mask_inverse = valid_hole_mask
 		return cls.hole_mask_inverse
 
-	# return [1326] one dim ndarray shape is (1326, )
 	# @param board should be a list
+	# @return one dim bool ndarray, shape is (1326, )
 	@classmethod
 	def get_board_mask(cls, board):
 		s = set(board)
@@ -65,6 +68,8 @@ class Mask:
 					out[index] = 0
 		return out
 
+	# @param board should be a list
+	# @return one dim bool ndarray, shape is (1326, )
 	@classmethod
 	def get_board_mask_inverse(cls, board):
 		s = set(board)
