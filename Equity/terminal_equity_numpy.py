@@ -17,12 +17,16 @@ class TerminalEquity(object):
 		self.board_mask = None
 		self.call_matrix = None
 		self.fold_matrix = None
+		self.call_matrix_tensor = None
+		self.fold_matrix_tensor = None
 
 	def set_board(self, board):
 		call_matrix = self.compute_call_matrix(board=board)
 		fold_matrix = self.compute_fold_matrix(board=board)
 		self.call_matrix = call_matrix
 		self.fold_matrix = fold_matrix
+		self.call_matrix_tensor = Argument.Tensor(call_matrix.astype(float))
+		self.fold_matrix_tensor = Argument.Tensor(fold_matrix.astype(float))
 
 		return
 
