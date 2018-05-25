@@ -85,6 +85,5 @@ class RangeGenerator:
 		player_dim, hole_dim = 0, 1
 		ranges = self.range_mask.reshape(1, 1326).astype(float)
 		ranges /= ranges.sum()
-		ranges.repeat(repeats=2, axis=player_dim)
 
-		return ranges
+		return ranges.repeat(repeats=2, axis=player_dim)
