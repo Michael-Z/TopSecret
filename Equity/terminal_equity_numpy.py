@@ -120,12 +120,6 @@ class TerminalEquity(object):
 
 		return call_matrix
 
-	def get_call_matrix(self):
-		return self.call_matrix
-
-	def get_fold_matrix(self):
-		return self.fold_matrix
-
 	# set board must be called first
 	# use self.call_matrix and ranges to compute Terminal Call Value
 	def compute_call_value(self, ranges):
