@@ -11,5 +11,5 @@ class TexasHoldemArgument:
 	hole_count = 1326
 	card_count = 52
 
-	batch_size = 100
+	batch_size = 1000
 	learning_rate = 0.01
