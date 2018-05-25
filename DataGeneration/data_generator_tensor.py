@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import os
 import torch
+import pickle
 import random
 import numpy as np
 from random import shuffle
@@ -8,28 +10,24 @@ from Settings.constants import Players
 from Range.ehs import ExpectedHandStrength
 from CFR.public_tree_cfr import PublicTreeCFR
 from Range.range_generator import RangeGenerator
-from Settings.arguments import TexasHoldemAgrument as Arguments
+from Settings.arguments import TexasHoldemArgument as Arguments
 from PokerTree.tree_builder import TexasHoldemTreeBuilder as TreeBuilder
 
 
 class DataGenerator:
 	def __init__(self):
-		self.save_folder = "../Data/TrainingSamples/Texas/"
+		self.save_folder = "../Data/TrainingSamples/Texas/CardValue/"
 		self.round = None
 		self.board_count = None
 		self.save_path = None
 		self.solver = None
 		self.range_generator = None
 		self.tree_builder = None
-		self.train_suffix = ".train"
-		self.valid_suffix = ".valid"
 
-		self.train_batch_count = None
-		self.valid_batch_count = None
+		self.batch_count = None
 		self.deck = None
 
-		self.batch_size = 10
-		# self.batch_size = Arguments.batch_size
+		self.batch_size = Arguments.batch_size
 		self.intervals = [(100, 100), (200, 400), (400, 2000), (2000, 6000), (6000, 19950)]
 
 		self.inputs_ph = None  		# placeholder of inputs
@@ -37,6 +35,8 @@ class DataGenerator:
 		self.mask_ph = None			# placeholder of mask
 
 		self.ehs = ExpectedHandStrength(file_path="../Data/EHS/")
+
+		self.counter = len(os.listdir(self.save_folder)) // 3
 
 	# @param filename
 	# @param rd should be 2, 3, 4
@@ -48,33 +48,29 @@ class DataGenerator:
 		self.tree_builder = TreeBuilder(bet_sizing=None, limit_to_street=True)
 		self.deck = list(range(52))
 
-	def generate_data(self, train_count, valid_count):
-		self.train_batch_count = train_count // self.batch_size
-		self.generate_train_data(data_count=train_count)
+	def generate_data(self, data_count):
+		self.batch_count = data_count // self.batch_size
 
-		# self.valid_batch_count = valid_count // self.batch_size
-		# self.generate_valid_data(data_count=valid_count)
-
-	def generate_train_data(self, data_count):
 		# initialize inputs, targets, masks' place holder
 		if self.inputs_ph is None:
 			self.inputs_ph = Arguments.Tensor(self.batch_size, 2 * 1326 + 1)
 			self.targets_ph = Arguments.Tensor(self.batch_size, 2 * 1326)
 			self.mask_ph = Arguments.Tensor(self.batch_size, 1326)
 
-		for i in range(self.train_batch_count):
+		for i in range(self.batch_count):
 			# [1.0] generate random poker situations
 			# board [b0, b1, ...], ranges [2 * batch_size * 1326], pots[batch_size * 1]
 			board, ranges, pots = self.generate_random_poker_situation()
 			ranges_tensor = Arguments.Tensor(ranges)
 			pots_tensor = Arguments.Tensor(pots).div_(Arguments.stack)
 			mask = Mask.get_board_mask(board)
-			mask_tensor = Arguments.Tensor(mask)
+			mask_tensor = Arguments.Tensor(mask.astype(float))
 			# mask
 			self.mask_ph.copy_(mask_tensor.expand_as(self.mask_ph))
 			# [2.0] solve random poker situations
 			for j in range(self.batch_size):
-				bets = [pots[j]] * 2
+				bet = int(pots[j])
+				bets = [bet, bet]
 				root = self.tree_builder.build_tree(street=self.round, initial_bets=bets,
 													current_player=Players.P0, board=board)
 				start_range = ranges_tensor[:, j, :]
@@ -90,18 +86,14 @@ class DataGenerator:
 				# mask already handled before loop
 			# end for
 			# save a batch of data
-			self.save_train_data(i)
+			self.save_batch_data()
 
-	def save_train_data(self, count):
-		inputs_save_path = "%s.%05d.train.inputs" % (self.save_folder, count)
-		targets_save_path = "%s.%05d.train.targets" % (self.save_folder, count)
-		mask_save_path = "%s.%05d.train.mask" % (self.save_folder, count)
-		torch.save(self.inputs_ph.float(), inputs_save_path)
-		torch.save(self.targets_ph.float(), targets_save_path)
-		torch.save(self.mask_ph.float(), mask_save_path)
-
-	def generate_valid_data(self, data_count):
-		pass
+	def save_batch_data(self):
+		save_path = "%s%05d-%d.dat" % (self.save_folder, self.counter, self.batch_size)
+		tp = (self.inputs_ph.float(), self.targets_ph.float(), self.mask_ph.float())
+		with open(save_path, "wb") as f:
+			pickle.dump(tp, f)
+		self.counter += 1
 
 	# @return board, ranges, pots. [one board, a batch of ranges and pots]
 	# board should be a list, ranges ndarray(2 * batch_size * 1326), pots ndarray(batch_size * 1)
@@ -131,10 +123,10 @@ class DataGenerator:
 
 def main():
 	dg = DataGenerator()
-	dg.setup(rd=3)
+	dg.setup(rd=3, solve_iter=2000, skip_iter=1000)
 	import time
 	s = time.time()
-	dg.generate_data(train_count=10, valid_count=100)
+	dg.generate_data(data_count=10000)
 	e = time.time()
 	print(e - s)
 
