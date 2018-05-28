@@ -5,11 +5,11 @@ from Settings.constants import Actions, Players, NodeTypes
 from Settings.arguments import TexasHoldemArgument as Argument
 
 
-class TexasHoldemTreeBuilder:
+class SimpleTreeBuilder:
 
-	def __init__(self, bet_sizing, limit_to_street=True):
-		self.limit_to_street = limit_to_street
+	def __init__(self, bet_sizing=None, limit_to_street=True):
 		self.bet_sizing = bet_sizing or BetSizing(pot_fractions=[1])
+		self.limit_to_street = limit_to_street
 
 	# @param street the current round
 	# @param initial_bets the list holding both player bets
@@ -24,7 +24,8 @@ class TexasHoldemTreeBuilder:
 		children = self._get_children(node)
 		node.children = children
 		child_count = len(children)
-		node.actions = [None] * child_count
+		# node.actions = [None] * child_count
+		node.actions = Argument.Tensor(child_count)
 		depth = 0
 		for i in range(child_count):
 			children[i].parent = node
@@ -62,7 +63,7 @@ class TexasHoldemTreeBuilder:
 		op = 1 - cp
 
 		# [1.0] fold is always valid
-		fold_node = Node(street, board, op, node.bets, NodeTypes.TERMINAL_FOLD)
+		fold_node = Node(street, board, op, node.bets, NodeTypes.TERMINAL_FOLD, True)
 		children.append(fold_node)
 
 		# check flag, preflop has no check, so street must satisfy 1<=street<==3
@@ -83,7 +84,7 @@ class TexasHoldemTreeBuilder:
 			children.append(chance_node)
 		else:				# [4.0] terminal call
 			bets = [max(node.bets)] * 2
-			terminal_call_node = Node(node.street, node.board, op, bets, NodeTypes.TERMINAL_CALL)
+			terminal_call_node = Node(node.street, node.board, op, bets, NodeTypes.TERMINAL_CALL, True)
 			children.append(terminal_call_node)
 		#  [5.0] raise actions
 		possible_bets = self.bet_sizing.get_possible_bets(node)
@@ -124,3 +125,33 @@ class TexasHoldemTreeBuilder:
 		else:
 			raise Exception
 		return new_boards
+
+
+# class AdvanceTreeBuilder:
+# 	def __init__(self, bet_sizing=None, limit_to_street=True):
+# 		self.bet_sizing = bet_sizing or BetSizing(pot_fractions=[1])
+# 		self.limit_to_street = limit_to_street
+#
+# 	def build_tree(self, street, initial_bets, current_player, board):
+# 		root = Node(street, board, current_player, initial_bets, node_type=NodeTypes.INNER)
+# 		self._build_tree_dfs(root)
+# 		return root
+#
+# 	def _build_tree_dfs(self, node):
+# 		children = self._get_children(node)
+# 		node.children = children
+# 		child_count = len(children)
+# 		node.actions = [None] * child_count
+# 		depth = 0
+# 		for i in range(child_count):
+# 			children[i].parent = node
+# 			self._build_tree_dfs(children[i])
+# 			depth = max(depth, children[i].depth)
+# 			if i == 0:
+# 				node.actions[i] = Actions.FOLD
+# 			elif i == 1:
+# 				node.actions[i] = Actions.CCALL
+# 			else:
+# 				node.actions[i] = max(children[i].bets)
+# 		node.depth = depth + 1
+# 		return node
