@@ -6,6 +6,7 @@ from Range.ehs import ExpectedHandStrength
 class StaticBucketer:
 	def __init__(self):
 		self.ehs = ExpectedHandStrength(file_path="../Data/EHS/")
+		self.bucket_count = 500
 
 	def compute_buckets(self, board):
 		board_count = len(board)
@@ -17,3 +18,6 @@ class StaticBucketer:
 		# use fixed interval bucketing, convert ehs to [0,1,2...499]
 		buckets = ehs_tensor.clone()
 		buckets[buckets > 0].mul_(500).floor_()
+
+	def get_bucket_count(self):
+		return self.bucket_count
