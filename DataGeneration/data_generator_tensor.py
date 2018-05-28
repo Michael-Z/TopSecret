@@ -11,7 +11,7 @@ from Range.ehs import ExpectedHandStrength
 from CFR.public_tree_cfr import PublicTreeCFR
 from Range.range_generator import RangeGenerator
 from Settings.arguments import TexasHoldemArgument as Arguments
-from PokerTree.tree_builder import TexasHoldemTreeBuilder as TreeBuilder
+from PokerTree.tree_builder import SimpleTreeBuilder as TreeBuilder
 
 
 class DataGenerator:
@@ -61,7 +61,7 @@ class DataGenerator:
 			# [1.0] generate random poker situations
 			# board [b0, b1, ...], ranges [2 * batch_size * 1326], pots[batch_size * 1]
 			board, ranges, pots = self.generate_random_poker_situation()
-			ranges_tensor = Arguments.Tensor(ranges)
+			ranges_tensor = Arguments.Tensor(ranges).view(Arguments.hole_count)
 			pots_tensor = Arguments.Tensor(pots).div_(Arguments.stack)
 			mask = Mask.get_board_mask(board)
 			mask_tensor = Arguments.Tensor(mask.astype(float))
