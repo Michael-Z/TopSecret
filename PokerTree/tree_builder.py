@@ -45,7 +45,7 @@ class SimpleTreeBuilder:
 	def _get_children(self, node):
 		children = []
 		if node.node_type == NodeTypes.TERMINAL_CALL or node.node_type == NodeTypes.TERMINAL_FOLD:
-			pass
+			assert node.terminal
 		elif node.current_player == Players.CHANCE:
 			children = self._get_children_of_chance(node)
 		else:
@@ -57,10 +57,8 @@ class SimpleTreeBuilder:
 		assert node.current_player != Players.CHANCE
 
 		children = []
-		street = node.street
-		board = node.board
-		cp = node.current_player
-		op = 1 - cp
+		street, board = node.street, node.board
+		cp, op = node.current_player, 1 - node.current_player
 
 		# [1.0] fold is always valid
 		fold_node = Node(street, board, op, node.bets, NodeTypes.TERMINAL_FOLD, True)
@@ -125,33 +123,3 @@ class SimpleTreeBuilder:
 		else:
 			raise Exception
 		return new_boards
-
-
-# class AdvanceTreeBuilder:
-# 	def __init__(self, bet_sizing=None, limit_to_street=True):
-# 		self.bet_sizing = bet_sizing or BetSizing(pot_fractions=[1])
-# 		self.limit_to_street = limit_to_street
-#
-# 	def build_tree(self, street, initial_bets, current_player, board):
-# 		root = Node(street, board, current_player, initial_bets, node_type=NodeTypes.INNER)
-# 		self._build_tree_dfs(root)
-# 		return root
-#
-# 	def _build_tree_dfs(self, node):
-# 		children = self._get_children(node)
-# 		node.children = children
-# 		child_count = len(children)
-# 		node.actions = [None] * child_count
-# 		depth = 0
-# 		for i in range(child_count):
-# 			children[i].parent = node
-# 			self._build_tree_dfs(children[i])
-# 			depth = max(depth, children[i].depth)
-# 			if i == 0:
-# 				node.actions[i] = Actions.FOLD
-# 			elif i == 1:
-# 				node.actions[i] = Actions.CCALL
-# 			else:
-# 				node.actions[i] = max(children[i].bets)
-# 		node.depth = depth + 1
-# 		return node

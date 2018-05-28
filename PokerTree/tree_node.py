@@ -15,6 +15,8 @@ class Node:
 		self.node_type = node_type
 		self.terminal = terminal
 
+		self.street_player_action_count = None
+
 		self.actions = None
 		self.children = None
 		self.depth = 0
