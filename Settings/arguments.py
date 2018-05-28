@@ -13,3 +13,5 @@ class TexasHoldemArgument:
 
 	batch_size = 1000
 	learning_rate = 0.01
+
+	gpu = False
