@@ -37,7 +37,7 @@ class Mask:
     def get_board_mask(cls, board):
         """compute board mask using given board cards
         :parameter board: a list of board cards
-        :return board_mask: a ByteTensor (1326, )
+        :return: a ByteTensor (1326, )
         """
         s = set(board)
         board_mask = torch.ByteTensor(Argument.hole_count).fill_(1)
