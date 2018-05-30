@@ -1,67 +1,145 @@
 # -*- coding: utf-8 -*-
-import torch
 import platform
 from Equity.mask import Mask
 from ctypes import cdll, c_int
+from itertools import combinations
 from Settings.arguments import TexasHoldemArgument as Argument
 
 dll = cdll.LoadLibrary("../so/hand_eval.dll") if platform.system() == "Windows" \
-	else cdll.LoadLibrary("../so/hand_eval.so")
+    else cdll.LoadLibrary("../so/hand_eval.so")
 
 
 class TerminalEquity(object):
-	def __init__(self):
-		self.hole_mask = Argument.Tensor(Mask.get_hole_mask())
-		self.board_mask = None
-		self.call_matrix = None
-		self.fold_matrix = None
+    """compute terminal equity of a given board, including call_matrix and fold_matrix """
+    def __init__(self):
+        self.hole_mask = None
+        self.inverse_hole_mask = None
+        self.board_mask = None
+        self.inverse_board_mask = None
 
-	def set_board(self, board):
-		# matrix [1326*1326]
+        self.call_matrix = None
+        self.fold_matrix = None
 
-		# [1.0] set call matrix (only works for last round)
-		assert board.size(0) == 5
+    def set_board(self, board):
+        """compute call_matrix first, fold_matirx second by calling _set_call_matrix() and _set_fold_matrix()
+        :param board: a list of board cards
+        :return: None
+        """
+        self.compute_mask(board)
+        self._set_call_matrix(board)
+        self._set_fold_matrix(board)
 
-		call_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count).fill_(0)
-		# self.board_mask = Mask.get_board_mask(board)
+    def compute_mask(self, board):
+        """compute hole mask and it's inverse, board mask and it's inverse. should be called before _set_xxx_matirx()
+        :param board: a list of board cards
+        :return: None
+        """
+        self.hole_mask = Mask.get_hole_mask()
+        self.inverse_hole_mask = 1 - self.hole_mask
+        self.board_mask = Mask.get_board_mask(board)
+        self.inverse_board_mask = 1 - self.board_mask
 
-		# hand evaluation, get strength vector
-		_strength = (c_int * 1326)()
-		_board = (c_int * 5)()
-		for i in range(board.size(0)):
-			_board[i] = int(board[i])
-		# strength indicates how large the hand is, -1 indicates impossible hand(conflict with board)
-		dll.eval5Board(_board, 5, _strength)
-		strength_list = [x for x in _strength]
-		strength = Argument.Tensor(strength_list)
+    def _set_call_matrix(self, board):
+        """call different function to compute call_matrix according to the round of a given board
+        :param board: a list of board cards
+        :return: None
+        """
+        board_count = len(board)
+        self.call_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count)
 
-		# set board mask according to strength
-		self.board_mask = strength.clone().fill_(1)
-		self.board_mask[strength < 0] = 0
+        if board_count == 0:
+            self.get_preflop_call_matrix(board, self.call_matrix)
+        elif board_count == 3:
+            self.get_flop_call_matrix(board, self.call_matrix)
+        elif board_count == 4:
+            self.get_turn_call_matrix(board, self.call_matrix)
+        elif board_count == 5:
+            self.get_last_round_call_matrix(board, self.call_matrix)
+        else:
+            raise Exception
 
-		assert int((self.board_mask > 0).sum()) == 1081
+    def _set_fold_matrix(self, board):
+        """compute fold_matrix according to hole_mask
+        :param board: a list of board cards
+        :return: None
+        """
+        self.fold_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count)
+        self.fold_matrix.copy_(self.hole_mask.float())
+        self.fold_matrix[self.inverse_board_mask, :] = 0
+        self.fold_matrix[:, self.inverse_board_mask] = 0
 
-		# construct row view and column view, construct win/lose/tie matrix
-		# Uij(i for row, j for col) = 1 if hand i < hand j; 0 if hand i == hand j; -1 if hand i > hand j
-		strength_view1 = strength.view(Argument.hole_count, 1).expand_as(call_matrix)
-		strength_view2 = strength.view(1, Argument.hole_count).expand_as(call_matrix)
+    def get_turn_call_matrix(self, board, call_matrix):
+        deck = list(filter(lambda x: x not in board, range(52)))
+        # enumerate
+        weight_constant = 1 / len(deck)
+        river_call_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count)
 
-		call_matrix[torch.lt(strength_view1, strength_view2)] = 1
-		call_matrix[torch.gt(strength_view1, strength_view2)] = -1
-		# call_matrix[torch.eq(strength_view1, strength_view2)] = 0
-		# mask out hole cards which conflict each other
-		call_matrix[self.hole_mask < 1] = 0
-		# mask out hole card which conflict boards
-		call_matrix[strength_view1 == -1] = 0
-		call_matrix[strength_view2 == -1] = 0
+        for card in deck:
+            new_board = board + [card]
+            self.get_last_round_call_matrix(new_board, river_call_matrix)
+            call_matrix.add_(river_call_matrix)
 
-		# [2.0] set fold matrix
-		fold_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count)
-		# make sure player hole don't conflict with opponent hole
-		fold_matrix.copy_(self.hole_mask)
-		# make sure hole don't conflict with board
-		fold_matrix[strength_view1 == -1] = 0
-		fold_matrix[strength_view2 == -1] = 0
+        call_matrix.mul_(weight_constant)
 
-		self.call_matrix = call_matrix
-		self.fold_matrix = fold_matrix
+    def get_flop_call_matrix(self, board, call_matrix):
+        deck = list(filter(lambda x: x not in board, range(52)))
+        weight_constant = (len(deck) * (len(deck) - 1)) >> 1
+        river_call_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count)
+
+        for cards in combinations(deck, 2):
+            new_board = board + list(cards)
+            self.get_last_round_call_matrix(new_board, river_call_matrix)
+            call_matrix.add_(river_call_matrix)
+
+        call_matrix.mul_(weight_constant)
+
+    def get_preflop_call_matrix(self, board, call_matrix):
+        sample_count = 2500
+        weight_constant = 1 / sample_count
+        river_call_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count)
+        new_boards = self.get_batch_roll_out_boards(board, sample_count)
+
+        for new_board in new_boards:
+            self.get_last_round_call_matrix(new_board, river_call_matrix)
+            call_matrix.add_(river_call_matrix)
+
+        call_matrix.mul_(weight_constant)
+
+    @staticmethod
+    def get_batch_roll_out_boards(self, board, batch_size):
+        deck = list(filter(lambda x: x not in board, range(52)))
+        new_boards = []
+        for i in range(batch_size):
+            new_boards.append(board + deck[:])
+        return new_boards
+
+    def get_last_round_call_matrix(self, board, call_matrix):
+        assert len(board) == 5
+
+        # eval every hole, get strength (1326, ) FloatTensor
+        _strength = (c_int * 1326)()
+        dll.eval5Board((c_int * 5)(*board), 5, _strength)
+        strength = Argument.Tensor(_strength)
+
+        self.board_mask = strength.clone().fill_(1)
+        self.board_mask[strength < 0] = 0
+
+        assert self.board_mask.sum() == 1081
+
+        view1 = strength.view(Argument.hole_count, 1).expand_as(call_matrix)
+        view2 = strength.view(1, Argument.hole_count).expand_as(call_matrix)
+
+        call_matrix.fill_(0)
+        call_matrix[view1 < view2] = 1
+        call_matrix[view1 > view2] = -1
+        # call_matrix[view1 == view2] = 0
+
+        # handle blocking cards. two holes can't share same cards
+        call_matrix[self.inverse_hole_mask] = 0
+        # handle blocking cards. hole can't share cards with board
+        call_matrix[self.inverse_board_mask, :] = 0
+        call_matrix[:, self.inverse_board_mask] = 0
+
+
+te = TerminalEquity()
+te.set_board([1, 2, 3, 4, 5])
