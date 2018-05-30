@@ -25,6 +25,8 @@ class BucketConversion:
 
         self._range_matrix[torch.eq(class_ids, card_buckets)] = 1
         self._reverse_value_matrix = self._range_matrix.t().clone()
+        card_count_of_bucket = self._reverse_value_matrix.sum(axis=1)
+        self._reverse_value_matrix.div_(card_count_of_bucket.expand_as(card_count_of_bucket))
 
     def card_range_2_bucket_range(self, card_range):
         return torch.mm(card_range, self._range_matrix)
