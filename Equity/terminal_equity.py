@@ -21,7 +21,7 @@ class TerminalEquity(object):
         self.fold_matrix = None
 
     def set_board(self, board):
-        """compute call_matrix first, fold_matirx second by calling _set_call_matrix() and _set_fold_matrix()
+        """compute call_matrix first, fold_matrix second by calling _set_call_matrix() and _set_fold_matrix()
         :param board: a list of board cards
         :return: None
         """
@@ -139,7 +139,3 @@ class TerminalEquity(object):
         # handle blocking cards. hole can't share cards with board
         call_matrix[self.inverse_board_mask, :] = 0
         call_matrix[:, self.inverse_board_mask] = 0
-
-
-te = TerminalEquity()
-te.set_board([1, 2, 3, 4, 5])
