@@ -3,17 +3,17 @@ from HandIsomorphism.hand_isomorphism_encapsulation import HandIsomorphismEncaps
 
 
 def test_hand_isomorphism():
-	hi = HandIsomorphism()
-	hi.setup(rounds=1, cards_per_round=[2])
-	size = hi.get_size()
-	print(size)
+    hi = HandIsomorphism()
+    hi.setup(rounds=4, cards_per_round=[2, 5])
+    size = hi.get_size()
+    print(size)
 
-	assert size == 169
+    cards = [0, 1, 2]
 
-	for i in range(169):
-		cards = hi.hand_unindex(index=i)
-		index = hi.index_hand(cards=cards)
-		assert index == i
+    for i in range(169):
+        cards = hi.hand_unindex(index=i)
+        index = hi.index_hand(cards=cards)
+        assert index == i
 
 
 test_hand_isomorphism()
