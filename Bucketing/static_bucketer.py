@@ -20,12 +20,11 @@ class StaticBucketer:
         rd = [0, None, None, 1, 2, 3][board_count]
         assert board_count in (0, 3, 4, 5)
 
-        ehs_list = self.ehs.get_possible_hand_ehs(board, rd)
-        ehs_tensor = torch.FloatTensor(ehs_list)
+        ehs_tensor = self.ehs.get_hand_ehs(board)
         board_mask = Mask.get_board_mask(board)
         # use fixed interval bucketing, convert ehs to [0,1,2...499]
         buckets = ehs_tensor.clone()
-        buckets[board_mask] *= 500
+        buckets[board_mask] *= (self.bucket_count - 1)
         buckets.floor_()
 
         return buckets
