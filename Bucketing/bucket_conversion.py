@@ -22,16 +22,16 @@ class BucketConversion:
         self._range_matrix = torch.FloatTensor(1326, self.bucket_count).zero_()
 
         buckets = self.bucketer.compute_buckets(board=board)
-        buckets = Arguments.Tensor(buckets)
         class_ids = torch.arange(0, self.bucket_count)  # [0, bucket_count)
         class_ids = class_ids.cuda() if Arguments.gpu else class_ids.float()
         class_ids = class_ids.view(1, self.bucket_count).expand(1326, self.bucket_count)
         card_buckets = buckets.view(1326, 1).expand(1326, self.bucket_count)  # (1326, 500)
 
         self._range_matrix[torch.eq(class_ids, card_buckets)] = 1
+
         self._reverse_value_matrix = self._range_matrix.t().clone()  # (500, 1326)
-        card_count_of_bucket = self._reverse_value_matrix.sum(1)
-        self._reverse_value_matrix.div_(card_count_of_bucket.expand_as(card_count_of_bucket))
+        card_count_of_bucket = self._reverse_value_matrix.sum(1).view(self.bucket_count, 1)
+        self._reverse_value_matrix.div_(card_count_of_bucket.expand_as(self._reverse_value_matrix))
 
     def card_range_2_bucket_range(self, card_range):
         """compute bucket range according card range, batch operation
