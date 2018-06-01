@@ -30,8 +30,15 @@ class BucketConversion:
         self._range_matrix[torch.eq(class_ids, card_buckets)] = 1
 
         self._reverse_value_matrix = self._range_matrix.t().clone()  # (500, 1326)
-        card_count_of_bucket = self._reverse_value_matrix.sum(1).view(self.bucket_count, 1)
-        self._reverse_value_matrix.div_(card_count_of_bucket.expand_as(self._reverse_value_matrix))
+        card_count_of_bucket = self._range_matrix.sum(0).view(self.bucket_count, 1)
+        weight = card_count_of_bucket.clone().clamp_(min=1)
+        weight = 1 / weight
+        inverse_mask = (card_count_of_bucket == 0).byte()
+        weight[inverse_mask] = 0
+        self._reverse_value_matrix.mul_(weight.expand_as(self._reverse_value_matrix))
+
+        assert self._range_matrix.sum() == 1081
+        assert (self._reverse_value_matrix > 0).sum() == 1081
 
     def card_range_2_bucket_range(self, card_range):
         """compute bucket range according card range, batch operation
