@@ -25,7 +25,7 @@ class RangeGenerator:
         rd = [0, None, None, 1, 2, 3][len(board)]
         self.valid_range_width = [1326, 1176, 1128, 1081][rd]
 
-        self.ehs_list = self.ehs.get_possible_hand_ehs(board_cards=board, rd=rd)
+        self.ehs_list = self.ehs.get_hand_ehs(board)
         self.range_mask = np.array(self.ehs_list, dtype=int)
         self.range_mask[self.range_mask >= 0] = 1
         self.range_mask[self.range_mask == -1] = 0

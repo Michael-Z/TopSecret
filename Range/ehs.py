@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import pickle
-from HandIsomorphism.hand_isomorphism import Hand_Indexer_S
+import torch
+from HandIsomorphism.hand_isomorphism_encapsulation import HandIsomorphismEncapsulation as HandIsomorphism
 
 
 class ExpectedHandStrength(object):
@@ -10,19 +11,24 @@ class ExpectedHandStrength(object):
         with open(file_path + "four_round_ehs.dat", "rb") as f:
             self.preflop_ehs, self.flop_ehs, self.turn_ehs, self.river_ehs = pickle.load(f)
         self.cards_per_round = [[2], [2, 3], [2, 4], [2, 5]]
-        self.indexers = [Hand_Indexer_S(cards) for cards in self.cards_per_round]
+        self.hand_indexer = HandIsomorphism()
 
-    def get_possible_hand_ehs(self, board_cards, rd):
-        ehs = [0 for i in range(1326)]
-        s = set([int(x) for x in board_cards])
+    def get_hand_ehs(self, board):
+        board_count = len(board)
+        rd = [0, None, None, 1, 2, 3][board_count]
+
+        self.hand_indexer.setup(rounds=rd + 1, cards_per_round=self.cards_per_round[rd])
+
+        ehs = torch.FloatTensor(1326).zero_()
+        used = set(board)
         for s_card in range(52 - 1):
             for b_card in range(s_card + 1, 52):
                 index = b_card * (b_card - 1) // 2 + s_card
-                if s_card in s or b_card in s:
+                if s_card in used or b_card in used:
                     ehs[index] = -1
                 else:
-                    cards = [s_card, b_card] + board_cards
-                    idx = self.indexers[rd].hand_index_last(cards)
+                    cards = [s_card, b_card] + board
+                    idx = self.hand_indexer.index_hand(cards=cards)
                     if rd == 0:
                         ehs[index] = self.preflop_ehs[idx]
                     if rd == 1:
