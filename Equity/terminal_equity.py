@@ -14,10 +14,6 @@ class TerminalEquity(object):
     def __init__(self):
         self.hole_mask = None
         self.inverse_hole_mask = None
-        self.board_mask = None
-        self.inverse_board_mask = None
-        self.inverse_board_mask_view1 = None
-        self.inverse_board_mask_view2 = None
 
         self.call_matrix = None
         self.fold_matrix = None
@@ -32,14 +28,12 @@ class TerminalEquity(object):
         self._set_fold_matrix(board)
 
     def compute_mask(self, board):
-        """compute hole mask and it's inverse, board mask and it's inverse. should be called before _set_xxx_matirx()
+        """compute hole mask and it's inverse, should be called before _set_xxx_matirx()
         :param board: a list of board cards
         :return: None
         """
         self.hole_mask = Mask.get_hole_mask()
         self.inverse_hole_mask = 1 - self.hole_mask
-        self.board_mask = Mask.get_board_mask(board)
-        self.inverse_board_mask = 1 - self.board_mask
 
     def _set_call_matrix(self, board):
         """call different function to compute call_matrix according to the round of a given board
@@ -65,10 +59,14 @@ class TerminalEquity(object):
         :param board: a list of board cards
         :return: None
         """
+        board_mask = Mask.get_board_mask(board)
+        inverse_board_mask = 1 - board_mask
+        inverse_board_mask_view1 = inverse_board_mask.view(1, -1).expand_as(self.fold_matrix)
+        inverse_board_mask_view2 = inverse_board_mask.view(-1, 1).expand_as(self.fold_matrix)
         self.fold_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count)
         self.fold_matrix.copy_(self.hole_mask.float())
-        self.fold_matrix[self.inverse_board_mask_view1] = 0
-        self.fold_matrix[self.inverse_board_mask_view2] = 0
+        self.fold_matrix[inverse_board_mask_view1] = 0
+        self.fold_matrix[inverse_board_mask_view2] = 0
 
     def get_turn_call_matrix(self, board, call_matrix):
         deck = list(filter(lambda x: x not in board, range(52)))
@@ -121,10 +119,11 @@ class TerminalEquity(object):
         # eval every hole, get strength (1326, ) FloatTensor
         _strength = (c_int * 1326)()
         dll.eval5Board((c_int * 5)(*board), 5, _strength)
-        strength = Argument.Tensor(_strength)
+        strength = Argument.Tensor(_strength)  # -1 in strength means conflict with board
 
-        self.board_mask = strength.clone().fill_(1)
-        self.board_mask[strength < 0] = 0
+        # use strength to construct inverse board mask, rather than compute a inverse board mask, save some time
+        inverse_board_mask = strength.clone().fill_(0)
+        inverse_board_mask[strength < 0] = 1
 
         assert self.board_mask.sum() == 1081
 
@@ -139,7 +138,7 @@ class TerminalEquity(object):
         # handle blocking cards. two holes can't share same cards
         call_matrix[self.inverse_hole_mask] = 0
         # handle blocking cards. hole can't share cards with board
-        self.inverse_board_mask_view1 = self.inverse_board_mask.view(1, -1).expand_as(call_matrix)
-        self.inverse_board_mask_view2 = self.inverse_board_mask.view(-1, 1).expand_as(call_matrix)
-        call_matrix[self.inverse_board_mask_view1] = 0
-        call_matrix[self.inverse_board_mask_view2] = 0
+        inverse_board_mask_view1 = inverse_board_mask.view(1, -1).expand_as(call_matrix)
+        inverse_board_mask_view2 = inverse_board_mask.view(-1, 1).expand_as(call_matrix)
+        call_matrix[inverse_board_mask_view1] = 0
+        call_matrix[inverse_board_mask_view2] = 0
