@@ -16,6 +16,8 @@ class TerminalEquity(object):
         self.inverse_hole_mask = None
         self.board_mask = None
         self.inverse_board_mask = None
+        self.inverse_board_mask_view1 = None
+        self.inverse_board_mask_view2 = None
 
         self.call_matrix = None
         self.fold_matrix = None
@@ -65,8 +67,8 @@ class TerminalEquity(object):
         """
         self.fold_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count)
         self.fold_matrix.copy_(self.hole_mask.float())
-        self.fold_matrix[self.inverse_board_mask, :] = 0
-        self.fold_matrix[:, self.inverse_board_mask] = 0
+        self.fold_matrix[self.inverse_board_mask_view1] = 0
+        self.fold_matrix[self.inverse_board_mask_view2] = 0
 
     def get_turn_call_matrix(self, board, call_matrix):
         deck = list(filter(lambda x: x not in board, range(52)))
@@ -137,5 +139,7 @@ class TerminalEquity(object):
         # handle blocking cards. two holes can't share same cards
         call_matrix[self.inverse_hole_mask] = 0
         # handle blocking cards. hole can't share cards with board
-        call_matrix[self.inverse_board_mask, :] = 0
-        call_matrix[:, self.inverse_board_mask] = 0
+        self.inverse_board_mask_view1 = self.inverse_board_mask.view(1, -1).expand_as(call_matrix)
+        self.inverse_board_mask_view2 = self.inverse_board_mask.view(-1, 1).expand_as(call_matrix)
+        call_matrix[self.inverse_board_mask_view1] = 0
+        call_matrix[self.inverse_board_mask_view2] = 0
