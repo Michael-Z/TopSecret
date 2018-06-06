@@ -59,6 +59,7 @@ class BucketConversion:
         """
         card_indicator = Arguments.Tensor(1, Arguments.hole_count).fill_(1)
         mask = torch.mm(card_indicator, self._range_matrix)
+        mask[mask > 0] = 1
         assert mask.shape == (1, self.bucket_count)
 
         return mask
