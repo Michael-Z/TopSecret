@@ -59,11 +59,12 @@ class TerminalEquity(object):
         :param board: a list of board cards
         :return: None
         """
+        self.fold_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count)
+
         board_mask = Mask.get_board_mask(board)
         inverse_board_mask = 1 - board_mask
         inverse_board_mask_view1 = inverse_board_mask.view(1, -1).expand_as(self.fold_matrix)
         inverse_board_mask_view2 = inverse_board_mask.view(-1, 1).expand_as(self.fold_matrix)
-        self.fold_matrix = Argument.Tensor(Argument.hole_count, Argument.hole_count)
         self.fold_matrix.copy_(self.hole_mask.float())
         self.fold_matrix[inverse_board_mask_view1] = 0
         self.fold_matrix[inverse_board_mask_view2] = 0
@@ -122,10 +123,10 @@ class TerminalEquity(object):
         strength = Argument.Tensor(_strength)  # -1 in strength means conflict with board
 
         # use strength to construct inverse board mask, rather than compute a inverse board mask, save some time
-        inverse_board_mask = strength.clone().fill_(0)
+        inverse_board_mask = strength.clone().fill_(0).byte()
         inverse_board_mask[strength < 0] = 1
 
-        assert self.board_mask.sum() == 1081
+        assert inverse_board_mask.sum() == 1326 - 1081
 
         view1 = strength.view(Argument.hole_count, 1).expand_as(call_matrix)
         view2 = strength.view(1, Argument.hole_count).expand_as(call_matrix)
