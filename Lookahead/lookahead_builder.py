@@ -86,7 +86,7 @@ class LookaheadBuilder:
         self.lookahead.positive_regrets_data = {}
         self.lookahead.placeholder_data = {}
         self.lookahead.regrets_sum = {}
-        self.lookahead.empty_action_mask = {} #  used to mask empty actions
+        self.lookahead.empty_action_mask = {}  # used to mask empty actions
 
         # used to hold and swap inner (nonterminal) nodes when doing some transpose operations
         self.lookahead.inner_nodes = {}
@@ -204,7 +204,7 @@ class LookaheadBuilder:
         # acting player for each layer
         self.lookahead.acting_player = Arguments.Tensor(self.lookahead.depth).fill_(-1)
         self.lookahead.acting_player[0] = 0
-        for d in range(2, self.lookahead.depth):
+        for d in range(1, self.lookahead.depth):
             self.lookahead.acting_player[d] = 1 - self.lookahead.acting_player[d - 1]
 
         self.lookahead.bets_count[-2], self.lookahead.bets_count[-1] = 1, 1
@@ -257,8 +257,8 @@ class LookaheadBuilder:
         if layer < self.lookahead.depth:
             grandparents_max_nonallin_branching = self.lookahead.nonallinbets_count[layer - 2]
             parents_max_terminal_branching = self.lookahead.terminal_actions_count[layer - 1]
-            grandparents_max_terminal_branching = self.lookahead.terminal_actions_count[layer - 2]
-            parents_max_nonterminal_branching = self.lookahead.bets_count[layer - 1]
+            # grandparents_max_terminal_branching = self.lookahead.terminal_actions_count[layer - 2]
+            # parents_max_nonterminal_branching = self.lookahead.bets_count[layer - 1]
 
             # compute next coordinates for parent and grandparent
             next_parent_id = action_id - parents_max_terminal_branching
