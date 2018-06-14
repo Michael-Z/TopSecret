@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from Lookahead.look_ahead import Lookahead
+from Lookahead.lookahead import Lookahead
 from PokerTree.tree_builder import SimpleTreeBuilder
 
 
@@ -38,7 +38,7 @@ class Resolving:
 
         self.lookahead.resolve_first_node(player_range, opponent_range)
         self.resolve_results = self.lookahead.get_results()
-        return self.resolve_result
+        return self.resolve_results
 
     def resolve(self, node, player_range, opponent_cfvs):
         """re-solves a depth-limited lookahead using an input range for the player and the CFR-D to generate
@@ -54,7 +54,7 @@ class Resolving:
 
         self.lookahead.resolve(player_range, opponent_cfvs)
         self.resolve_results = self.lookahead.get_results()
-        return self.resolve_result
+        return self.resolve_results
 
     def _action_2_action_id(self, action):
         """Gives the index of the given action at the node being re-solved.

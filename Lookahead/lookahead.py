@@ -35,6 +35,8 @@ class Lookahead:
             self._compute_cfvs()
             self._compute_regrets()
             self._compute_cumulate_average_cfvs(iters)
+        self._compute_normalize_average_strategies()
+        self._compute_normalize_average_cfvs()
 
     def _compute_current_strategies(self):
         for d in range(1, self.depth):
@@ -137,7 +139,7 @@ class Lookahead:
             self.cfvs_data[d].mul_(self.pot_size[d])
 
     def _compute_cfvs(self):
-        for d in range(self.depth - 1, 1, -1):
+        for d in range(self.depth - 1, 0, -1):
             gpl_terminal_actions_count = self.terminal_actions_count[d - 2]
             ggpl_nonallin_bets_count = self.nonallinbets_count[d - 3]
 
@@ -164,6 +166,16 @@ class Lookahead:
             self.average_cfvs_data[1].add_(self.cfvs_data[1])
 
     def _compute_normalize_average_strategies(self):
+        player_avg_strategy = self.average_strategies_data[1]
+        player_avg_strategy_sum = self.regrets_sum[1]
+        torch.sum(player_avg_strategy, 0, keepdim=True, out=player_avg_strategy_sum)
+        player_avg_strategy.div_(player_avg_strategy_sum.expand_as(player_avg_strategy))
+
+        fold_idx = self.fold_action_index
+        player_avg_strategy[fold_idx][player_avg_strategy[fold_idx].ne(player_avg_strategy[fold_idx])] = 1
+        player_avg_strategy[player_avg_strategy.ne(player_avg_strategy)] = 0
+
+    def _compute_normalize_average_cfvs(self):
         weight = 1 / (Arguments.cfr_iters - Arguments.cfr_skip_iters)
         self.average_cfvs_data[0].mul_(weight)
 
