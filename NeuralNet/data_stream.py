@@ -69,7 +69,7 @@ class DataStream:
         self.total_targets = self.total_targets.index((shuffle, ))
         self.total_masks = self.total_masks.index((shuffle, ))
 
-        split_index = int(self.total_data_count * fraction)
+        split_index = int((self.total_data_count // 100) * fraction) * 100
         self.train_count = split_index
         self.train_input_data = self.total_inputs[:split_index, :]
         self.train_target_data = self.total_targets[:split_index, :]
@@ -79,6 +79,8 @@ class DataStream:
         self.valid_input_data = self.total_inputs[split_index:, :]
         self.valid_target_data = self.total_targets[split_index:, :]
         self.valid_mask_data = self.total_masks[split_index:, :]
+
+        print("train count:", self.train_count, "valid count:", self.valid_count)
 
     def setup_batch_size(self, train_batch_size, valid_batch_size):
         """set up batch size for training and validation respectively
@@ -100,7 +102,7 @@ class DataStream:
 
     def start_epoch(self):
         """randomly shuffle the training data"""
-        shuffle = torch.randperm(self.train_data_count)
+        shuffle = torch.randperm(self.train_count)
         self.train_input_data = self.train_input_data.index((shuffle, ))
         self.train_target_data = self.train_target_data.index((shuffle, ))
         self.train_mask_data = self.train_mask_data.index((shuffle, ))
